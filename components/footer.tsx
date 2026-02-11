@@ -68,7 +68,7 @@ export function Footer() {
       >
         <div ref={leftRef}>
           <p className="font-serif text-xl sm:text-2xl text-primary mb-1.5 sm:mb-2 opacity-0">
-            ichewigeskind
+            ich ewiges kind.
           </p>
           <p className="font-sans text-xs text-muted-foreground mb-1.5 sm:mb-2 opacity-0">
             A journal of analog photography
