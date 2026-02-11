@@ -11,16 +11,20 @@ interface GalleryItem {
   title: string;
 }
 
+interface GalleryResponse {
+  images?: GalleryItem[];
+  nextPageToken?: string | null;
+  error?: string;
+}
+
 const GRID_COLS = "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
 
 function GalleryCard({
   item,
-  index,
   onClick,
   priority = false,
 }: {
   item: GalleryItem;
-  index: number;
   onClick: () => void;
   priority?: boolean;
 }) {
@@ -193,23 +197,71 @@ function ImageViewer({
   );
 }
 
-export function Gallery({ initialItems = [] }: { initialItems?: GalleryItem[] }) {
+export function Gallery({
+  initialItems = [],
+  initialNextPageToken = null,
+}: {
+  initialItems?: GalleryItem[];
+  initialNextPageToken?: string | null;
+}) {
   const [items, setItems] = useState<GalleryItem[]>(initialItems);
   const [loading, setLoading] = useState(initialItems.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(
+    initialNextPageToken
+  );
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+
+  const mergeItems = (prev: GalleryItem[], incoming: GalleryItem[]) => {
+    if (incoming.length === 0) return prev;
+    const existingIds = new Set(prev.map((item) => item.id));
+    const filtered = incoming.filter((item) => !existingIds.has(item.id));
+    return filtered.length > 0 ? [...prev, ...filtered] : prev;
+  };
 
   useEffect(() => {
     if (initialItems.length > 0) return;
     fetch("/api/gallery")
       .then((res) => {
-        if (!res.ok) return res.json().then((d) => { throw new Error(d.error ?? "Failed to load"); });
-        return res.json();
+        if (!res.ok) {
+          return res.json().then((d: GalleryResponse) => {
+            throw new Error(d.error ?? "Failed to load");
+          });
+        }
+        return res.json() as Promise<GalleryResponse>;
       })
-      .then((data) => setItems(data.images ?? []))
+      .then((data) => {
+        setItems(data.images ?? []);
+        setNextPageToken(data.nextPageToken ?? null);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [initialItems.length]);
+
+  const loadMore = async () => {
+    if (!nextPageToken || loadingMore) return;
+
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    try {
+      const params = new URLSearchParams({ pageToken: nextPageToken });
+      const res = await fetch(`/api/gallery?${params.toString()}`);
+      const data = (await res.json()) as GalleryResponse;
+
+      if (!res.ok) {
+        throw new Error(data.error ?? "Failed to load more");
+      }
+
+      setItems((prev) => mergeItems(prev, data.images ?? []));
+      setNextPageToken(data.nextPageToken ?? null);
+    } catch (e) {
+      setLoadMoreError(e instanceof Error ? e.message : "Failed to load more");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const openViewer = (index: number) => setViewerIndex(index);
   const closeViewer = () => setViewerIndex(null);
@@ -260,17 +312,35 @@ export function Gallery({ initialItems = [] }: { initialItems?: GalleryItem[] })
       )}
 
       {!loading && !error && (
-        <div className={`grid ${GRID_COLS} gap-0`}>
-          {items.map((item, index) => (
-            <GalleryCard
-              key={item.id}
-              item={item}
-              index={index}
-              onClick={() => openViewer(index)}
-              priority={index < 6}
-            />
-          ))}
-        </div>
+        <>
+          <div className={`grid ${GRID_COLS} gap-0`}>
+            {items.map((item, index) => (
+              <GalleryCard
+                key={item.id}
+                item={item}
+                onClick={() => openViewer(index)}
+                priority={index < 6}
+              />
+            ))}
+          </div>
+          {nextPageToken && (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+              >
+                {loadingMore ? "loading..." : "more"}
+              </button>
+            </div>
+          )}
+          {loadMoreError && (
+            <div className="mt-2 text-center">
+              <p className="text-xs text-muted-foreground">{loadMoreError}</p>
+            </div>
+          )}
+        </>
       )}
 
       {viewerIndex !== null && (

@@ -47,12 +47,13 @@ npm run dev
 
 ```
 1. page.tsx (서버)
-   └─ getGalleryImages() 호출
+   └─ getInitialGalleryPage() 호출
       └─ lib/gallery.ts
-         └─ unstable_cache(5분) → Drive API(30개 단위 페이지네이션) → 이미지 메타데이터 목록
+         └─ unstable_cache(5분) → Drive API(첫 30장) → 이미지 메타데이터 목록 + nextPageToken
 
 2. Hero: images 중 랜덤 1장 → initialSrc
-3. Gallery: images 전체 → initialItems
+3. Gallery: 첫 30장 → initialItems
+   └─ 하단 "more" 클릭 시 /api/gallery?pageToken=... 으로 다음 30장 추가 로딩
 
 4. 이미지 표시
    └─ src: /api/gallery/image?id={fileId}
@@ -67,7 +68,7 @@ npm run dev
 
 ```
 app/
-├── page.tsx              # 홈: getGalleryImages → Hero, Gallery에 전달
+├── page.tsx              # 홈: getInitialGalleryPage → Hero, Gallery에 전달
 ├── api/
 │   ├── gallery/
 │   │   ├── route.ts      # 클라이언트 폴백용 목록 API
@@ -102,7 +103,7 @@ lib/
 - **목록 캐시**  
   `lib/gallery.ts`에서 `unstable_cache`로 5분간 캐시.
 - **목록 수집 방식**  
-  Drive API `nextPageToken`을 따라 30개씩 반복 조회하여 누락 없이 전체 목록을 수집.
+  초기 렌더는 30장 + `nextPageToken`만 내려주고, 이후에는 "more" 클릭 시 30장씩 추가 조회.
 - **이미지 캐시**  
   `/api/gallery/image`에서 `Cache-Control`로 캐시:
   - `max-age=86400` (브라우저 24시간)
@@ -123,7 +124,7 @@ lib/
 ### 갤러리
 
 - **서버 데이터**  
-  `initialItems`로 서버에서 받은 데이터로 바로 렌더링.
+  `initialItems`(첫 30장) + `initialNextPageToken`으로 서버 데이터 즉시 렌더링 후 점진 로딩.
 - **지연 로딩**  
   보이는 항목만 IntersectionObserver로 렌더링.
 - **이미지 뷰어**  

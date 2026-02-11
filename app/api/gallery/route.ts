@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { recordDriveUsage } from "@/lib/drive-monitor";
 
@@ -18,7 +18,15 @@ interface DriveFile {
   webContentLink?: string;
 }
 
-async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
+interface DriveListPage {
+  files: DriveFile[];
+  nextPageToken: string | null;
+}
+
+async function fetchWithServiceAccount(
+  folderId: string,
+  pageToken?: string
+): Promise<DriveListPage> {
   const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!credentialsJson) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not set");
 
@@ -36,37 +44,32 @@ async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
   const drive = google.drive({ version: "v3", auth });
   const mimeQuery = SUPPORTED_IMAGE_TYPES.map((t) => `mimeType='${t}'`).join(" or ");
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
-  const files: DriveFile[] = [];
-  let pageToken: string | undefined;
+  const res = await drive.files.list({
+    q,
+    fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink)",
+    orderBy: "createdTime desc",
+    pageSize: DRIVE_PAGE_SIZE,
+    pageToken,
+    supportsAllDrives: true,
+    includeItemsFromAllDrives: true,
+  });
+  const files = (res.data.files ?? []) as DriveFile[];
+  const nextPageToken = res.data.nextPageToken ?? null;
+  recordDriveUsage("files.list", {
+    source: "api/gallery",
+    count: files.length,
+    hasNextPage: !!nextPageToken,
+  });
 
-  do {
-    const res = await drive.files.list({
-      q,
-      fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink)",
-      orderBy: "createdTime desc",
-      pageSize: DRIVE_PAGE_SIZE,
-      pageToken,
-      supportsAllDrives: true,
-      includeItemsFromAllDrives: true,
-    });
-    const pageFiles = (res.data.files ?? []) as DriveFile[];
-    files.push(...pageFiles);
-    pageToken = res.data.nextPageToken ?? undefined;
-    recordDriveUsage("files.list", {
-      source: "api/gallery",
-      count: pageFiles.length,
-      hasNextPage: !!pageToken,
-    });
-  } while (pageToken);
-
-  return files;
+  return { files, nextPageToken };
 }
 
 async function fetchWithApiKey(
   folderId: string,
   apiKey: string,
-  resourceKey?: string
-): Promise<DriveFile[]> {
+  resourceKey?: string,
+  pageToken?: string
+): Promise<DriveListPage> {
   const mimeQuery = SUPPORTED_IMAGE_TYPES
     .map((t) => `mimeType='${t}'`)
     .join(" or ");
@@ -76,57 +79,52 @@ async function fetchWithApiKey(
   if (resourceKey) {
     headers["X-Goog-Drive-Resource-Keys"] = `${folderId}/${resourceKey}`;
   }
-  const files: DriveFile[] = [];
-  let pageToken: string | undefined;
+  const params = new URLSearchParams({
+    q,
+    key: apiKey,
+    fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink)",
+    orderBy: "createdTime desc",
+    pageSize: String(DRIVE_PAGE_SIZE),
+    supportsAllDrives: "true",
+    includeItemsFromAllDrives: "true",
+  });
+  if (pageToken) params.set("pageToken", pageToken);
 
-  do {
-    const params = new URLSearchParams({
-      q,
-      key: apiKey,
-      fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink)",
-      orderBy: "createdTime desc",
-      pageSize: String(DRIVE_PAGE_SIZE),
-      supportsAllDrives: "true",
-      includeItemsFromAllDrives: "true",
-    });
-    if (pageToken) params.set("pageToken", pageToken);
+  const res = await fetch(
+    `https://www.googleapis.com/drive/v3/files?${params}`,
+    { headers, next: { revalidate: 3600 } }
+  );
 
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?${params}`,
-      { headers, next: { revalidate: 3600 } }
-    );
-
-    if (!res.ok) {
-      const text = await res.text();
-      let parsed: { error?: { message?: string } } = {};
-      try {
-        parsed = JSON.parse(text) as { error?: { message?: string } };
-      } catch {
-        /* ignore */
-      }
-      const msg = parsed.error?.message ?? text;
-      throw new Error(`Drive API ${res.status}: ${msg}`);
+  if (!res.ok) {
+    const text = await res.text();
+    let parsed: { error?: { message?: string } } = {};
+    try {
+      parsed = JSON.parse(text) as { error?: { message?: string } };
+    } catch {
+      /* ignore */
     }
+    const msg = parsed.error?.message ?? text;
+    throw new Error(`Drive API ${res.status}: ${msg}`);
+  }
 
-    const data = (await res.json()) as { files?: DriveFile[]; nextPageToken?: string };
-    const pageFiles = data.files ?? [];
-    files.push(...pageFiles);
-    pageToken = data.nextPageToken ?? undefined;
-    recordDriveUsage("files.list", {
-      source: "api/gallery-apiKey",
-      count: pageFiles.length,
-      hasNextPage: !!pageToken,
-    });
-  } while (pageToken);
+  const data = (await res.json()) as { files?: DriveFile[]; nextPageToken?: string };
+  const files = data.files ?? [];
+  const nextPageToken = data.nextPageToken ?? null;
+  recordDriveUsage("files.list", {
+    source: "api/gallery-apiKey",
+    count: files.length,
+    hasNextPage: !!nextPageToken,
+  });
 
-  return files;
+  return { files, nextPageToken };
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
   const resourceKey = process.env.GOOGLE_DRIVE_RESOURCE_KEY;
   const useServiceAccount = !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const pageToken = request.nextUrl.searchParams.get("pageToken") ?? undefined;
 
   if (!folderId) {
     return NextResponse.json(
@@ -149,18 +147,21 @@ export async function GET() {
   }
 
   try {
-    const files = useServiceAccount
-      ? await fetchWithServiceAccount(folderId)
-      : await fetchWithApiKey(folderId, apiKey!, resourceKey);
+    const page = useServiceAccount
+      ? await fetchWithServiceAccount(folderId, pageToken)
+      : await fetchWithApiKey(folderId, apiKey!, resourceKey, pageToken);
 
-    const images = files.map((file) => ({
+    const images = page.files.map((file) => ({
       id: file.id,
-      src: `https://drive.google.com/uc?export=view&id=${file.id}`,
+      src: `/api/gallery/image?id=${encodeURIComponent(file.id)}`,
       alt: file.name.replace(/\.[^/.]+$/, ""),
       title: file.name.replace(/\.[^/.]+$/, ""),
     }));
 
-    return NextResponse.json({ images });
+    return NextResponse.json({
+      images,
+      nextPageToken: page.nextPageToken,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load gallery";
     console.error("Gallery API error:", err);
