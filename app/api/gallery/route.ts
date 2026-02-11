@@ -38,7 +38,7 @@ async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
   const res = await drive.files.list({
     q,
     fields: "files(id,name,mimeType,thumbnailLink,webContentLink)",
-    orderBy: "modifiedTime desc",
+    orderBy: "createdTime asc",
     pageSize: 100,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
@@ -59,7 +59,7 @@ async function fetchWithApiKey(
     q,
     key: apiKey,
     fields: "files(id,name,mimeType,thumbnailLink,webContentLink)",
-    orderBy: "modifiedTime desc",
+    orderBy: "createdTime asc",
     pageSize: "100",
     supportsAllDrives: "true",
     includeItemsFromAllDrives: "true",
