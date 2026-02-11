@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface GalleryItem {
   id: string;
@@ -24,47 +24,50 @@ function GalleryCard({
   onClick: () => void;
   priority?: boolean;
 }) {
-  const [isVisible, setIsVisible] = useState(priority);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (priority) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.1 }
-    );
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [priority]);
 
   return (
     <button
-      ref={ref}
       type="button"
       onClick={onClick}
-      className={`group w-full text-left transition-all duration-[800ms] ease-out ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-      }`}
-      style={{ transitionDelay: `${index * 40}ms` }}
+      className="group w-full text-left"
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        {!imageLoaded && (
-          <div className="absolute inset-0 z-10 animate-pulse bg-muted" />
-        )}
+        {/* 스켈레톤: 영역 세팅 시점부터 이미지 로드 전까지 항상 표시 */}
+        <div
+          className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 transition-opacity duration-300 ${
+            imageLoaded ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
+        >
+          <div className="absolute inset-0 bg-accent animate-pulse" />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div
+              className="absolute inset-0 -translate-x-full animate-shimmer"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)",
+                width: "50%",
+              }}
+            />
+          </div>
+          <div className="relative z-10 flex gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse"
+                style={{ animationDelay: `${i * 150}ms` }}
+              />
+            ))}
+          </div>
+        </div>
         <Image
           src={item.src || "/placeholder.svg"}
           alt={item.alt}
           fill
           priority={priority}
           fetchPriority={priority ? "high" : "auto"}
-          className={`object-cover transition-all duration-300 group-hover:scale-105 ${
-            imageLoaded ? "opacity-100" : "opacity-0"
+          className={`object-cover transition-all duration-500 ease-out group-hover:scale-105 ${
+            imageLoaded ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
           sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
           onLoad={() => setImageLoaded(true)}
@@ -159,12 +162,20 @@ function ImageViewer({
       )}
 
       <div
-        className="relative z-[50] flex max-h-[90vh] max-w-[90vw] items-center justify-center"
+        className="relative z-[50] flex max-h-[90vh] max-w-[90vw] items-center justify-center min-h-[200px]"
         onClick={(e) => e.stopPropagation()}
       >
         {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Loader2 className="h-12 w-12 animate-spin text-white/60" />
+          <div className="absolute inset-0 flex items-center justify-center gap-2">
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-1.5 w-1.5 rounded-full bg-white/50 animate-pulse"
+                  style={{ animationDelay: `${i * 150}ms` }}
+                />
+              ))}
+            </div>
           </div>
         )}
         {/* Use proxy for reliable display (Drive direct URLs often fail in img) */}
@@ -172,8 +183,8 @@ function ImageViewer({
         <img
           src={`/api/gallery/image?id=${encodeURIComponent(item.id)}`}
           alt={item.alt}
-          className={`max-h-[90vh] max-w-full w-auto object-contain transition-opacity duration-300 ${
-            imageLoading ? "opacity-0" : "opacity-100"
+          className={`max-h-[90vh] max-w-full w-auto object-contain transition-all duration-500 ease-out ${
+            imageLoading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
           }`}
           onLoad={() => setImageLoading(false)}
         />
@@ -214,8 +225,30 @@ export function Gallery({ initialItems = [] }: { initialItems?: GalleryItem[] })
           {[...Array(12)].map((_, i) => (
             <div
               key={i}
-              className="aspect-square animate-pulse bg-secondary"
-            />
+              className="relative aspect-square overflow-hidden bg-secondary flex items-center justify-center"
+            >
+              <div className="absolute inset-0 bg-accent animate-pulse" />
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div
+                  className="absolute inset-0 -translate-x-full animate-shimmer"
+                  style={{
+                    animationDelay: `${i * 0.12}s`,
+                    background:
+                      "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)",
+                    width: "50%",
+                  }}
+                />
+              </div>
+              <div className="relative z-10 flex gap-1">
+                {[0, 1, 2].map((j) => (
+                  <div
+                    key={j}
+                    className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse"
+                    style={{ animationDelay: `${j * 150}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       )}

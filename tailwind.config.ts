@@ -117,6 +117,20 @@ const config: Config = {
             filter: 'blur(0)',
           },
         },
+        'shimmer': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(200%)' },
+        },
+        'image-reveal': {
+          from: {
+            opacity: '0',
+            transform: 'scale(0.98)',
+          },
+          to: {
+            opacity: '1',
+            transform: 'scale(1)',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -124,6 +138,8 @@ const config: Config = {
         'fade-in': 'fade-in 1.2s ease-out forwards',
         'fade-in-slow': 'fade-in-slow 2s ease-out forwards',
         'reveal-text': 'reveal-text 1.5s ease-out forwards',
+        'shimmer': 'shimmer 1.8s ease-in-out infinite',
+        'image-reveal': 'image-reveal 0.5s ease-out forwards',
       },
     },
   },
