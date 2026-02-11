@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import gsap from "gsap";
 
-export function Hero() {
+export function Hero({ initialSrc }: { initialSrc?: string | null }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [heroSrc, setHeroSrc] = useState<string | null>(null);
-  const ref = useRef<HTMLElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const subtitleRef = useRef<HTMLParagraphElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 100);
@@ -14,22 +16,45 @@ export function Hero() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/gallery")
-      .then((res) => res.ok ? res.json() : Promise.resolve({ images: [] }))
-      .then((data) => {
-        const images = data?.images ?? [];
-        if (images.length > 0) {
-          const randomIndex = Math.floor(Math.random() * images.length);
-          setHeroSrc(images[randomIndex].src);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    if (!isVisible || !subtitleRef.current || !titleRef.current) return;
 
-  const bgSrc = heroSrc ?? "/images/hero.jpg";
+    gsap.fromTo(
+      subtitleRef.current,
+      {
+        opacity: 0,
+        y: 24,
+      },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 2.2,
+        delay: 0.4,
+        ease: "power2.out",
+      }
+    );
+
+    gsap.fromTo(
+      titleRef.current,
+      {
+        opacity: 0,
+        y: 40,
+        filter: "blur(8px)",
+      },
+      {
+        opacity: 1,
+        y: 0,
+        filter: "blur(0px)",
+        duration: 2.5,
+        delay: 0.9,
+        ease: "power2.out",
+      }
+    );
+  }, [isVisible]);
+
+  const bgSrc = initialSrc ?? "/images/hero.jpg";
 
   return (
-    <section ref={ref} className="relative min-h-screen flex items-end">
+    <section ref={sectionRef} className="relative min-h-screen flex items-end">
       <div className="absolute inset-0">
         <Image
           src={bgSrc}
@@ -39,6 +64,7 @@ export function Hero() {
             isVisible ? "opacity-100" : "opacity-0"
           }`}
           priority
+          fetchPriority="high"
           sizes="100vw"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
@@ -47,22 +73,16 @@ export function Hero() {
       <div className="relative z-10 w-full px-6 pb-24 md:px-16 lg:px-24">
         <div className="max-w-3xl">
           <p
-            className={`font-sans text-xs uppercase tracking-[0.35em] text-muted-foreground mb-6 transition-all duration-[2000ms] delay-500 ${
-              isVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-4"
-            }`}
+            ref={subtitleRef}
+            className="font-sans text-xs uppercase tracking-[0.35em] text-muted-foreground mb-6 opacity-0"
           >
             A Film Photography Journal
           </p>
           <h1
-            className={`font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight text-primary transition-all duration-[2000ms] delay-700 ${
-              isVisible
-                ? "opacity-100 translate-y-0 blur-0"
-                : "opacity-0 translate-y-6 blur-[4px]"
-            }`}
+            ref={titleRef}
+            className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight text-primary opacity-0"
           >
-            ichewigeskind
+            ich ewiges kind.
           </h1>
         </div>
       </div>

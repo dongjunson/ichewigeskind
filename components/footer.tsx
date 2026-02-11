@@ -5,8 +5,11 @@ export function Footer() {
         <p className="font-serif text-2xl text-primary mb-2">
           ichewigeskind
         </p>
+        <p className="font-sans text-xs text-muted-foreground mb-2">
+          A journal of analog photography 
+        </p>
         <p className="font-sans text-xs text-muted-foreground">
-          A journal of analog photography
+          love@ichewigeskind.com
         </p>
       </div>
 

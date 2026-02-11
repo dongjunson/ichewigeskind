@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { google } from "googleapis";
 
 const SUPPORTED_IMAGE_TYPES = [
@@ -8,12 +8,17 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/gif",
 ];
 
+export interface GalleryImage {
+  id: string;
+  src: string;
+  alt: string;
+  title: string;
+}
+
 interface DriveFile {
   id: string;
   name: string;
   mimeType?: string;
-  thumbnailLink?: string;
-  webContentLink?: string;
 }
 
 async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
@@ -37,7 +42,7 @@ async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
 
   const res = await drive.files.list({
     q,
-    fields: "files(id,name,mimeType,thumbnailLink,webContentLink)",
+    fields: "files(id,name,mimeType)",
     orderBy: "modifiedTime desc",
     pageSize: 100,
     supportsAllDrives: true,
@@ -58,7 +63,7 @@ async function fetchWithApiKey(
   const params = new URLSearchParams({
     q,
     key: apiKey,
-    fields: "files(id,name,mimeType,thumbnailLink,webContentLink)",
+    fields: "files(id,name,mimeType)",
     orderBy: "modifiedTime desc",
     pageSize: "100",
     supportsAllDrives: "true",
@@ -72,7 +77,7 @@ async function fetchWithApiKey(
 
   const res = await fetch(
     `https://www.googleapis.com/drive/v3/files?${params}`,
-    { headers, next: { revalidate: 3600 } }
+    { headers }
   );
 
   if (!res.ok) {
@@ -91,54 +96,29 @@ async function fetchWithApiKey(
   return data.files ?? [];
 }
 
-export async function GET() {
+async function fetchGalleryImages(): Promise<GalleryImage[]> {
   const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
   const resourceKey = process.env.GOOGLE_DRIVE_RESOURCE_KEY;
   const useServiceAccount = !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 
-  if (!folderId) {
-    return NextResponse.json(
-      {
-        error:
-          "GOOGLE_DRIVE_FOLDER_ID is required. Add it in Vercel: Project Settings → Environment Variables.",
-      },
-      { status: 500 }
-    );
-  }
+  if (!folderId) return [];
+  if (!useServiceAccount && !apiKey) return [];
 
-  if (!useServiceAccount && !apiKey) {
-    return NextResponse.json(
-      {
-        error:
-          "Set either GOOGLE_DRIVE_API_KEY (for public folder) or GOOGLE_SERVICE_ACCOUNT_JSON (recommended).",
-      },
-      { status: 500 }
-    );
-  }
+  const files = useServiceAccount
+    ? await fetchWithServiceAccount(folderId)
+    : await fetchWithApiKey(folderId, apiKey!, resourceKey);
 
-  try {
-    const files = useServiceAccount
-      ? await fetchWithServiceAccount(folderId)
-      : await fetchWithApiKey(folderId, apiKey!, resourceKey);
-
-    const images = files.map((file) => ({
-      id: file.id,
-      src: `https://drive.google.com/uc?export=view&id=${file.id}`,
-      alt: file.name.replace(/\.[^/.]+$/, ""),
-      title: file.name.replace(/\.[^/.]+$/, ""),
-    }));
-
-    return NextResponse.json({ images });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to load gallery";
-    console.error("Gallery API error:", err);
-    return NextResponse.json(
-      {
-        error: "Unable to fetch gallery.",
-        details: message,
-      },
-      { status: 500 }
-    );
-  }
+  return files.map((file) => ({
+    id: file.id,
+    src: `/api/gallery/image?id=${encodeURIComponent(file.id)}`,
+    alt: file.name.replace(/\.[^/.]+$/, ""),
+    title: file.name.replace(/\.[^/.]+$/, ""),
+  }));
 }
+
+export const getGalleryImages = unstable_cache(
+  fetchGalleryImages,
+  ["gallery-images"],
+  { revalidate: 300 }
+);

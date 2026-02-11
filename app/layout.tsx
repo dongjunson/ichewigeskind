@@ -18,10 +18,24 @@ export const metadata: Metadata = {
   title: "ichewigeskind — Film Photography Journal",
   description:
     "A quiet journal dedicated to the art of analog photography. Stories told through grain, light, and patience.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-icon-180x180.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-icon-152x152.png", sizes: "152x152", type: "image/png" },
+      { url: "/apple-icon-144x144.png", sizes: "144x144", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1a1714",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({

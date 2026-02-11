@@ -4,6 +4,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    localPatterns: [
+      {
+        pathname: "/api/gallery/image",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",

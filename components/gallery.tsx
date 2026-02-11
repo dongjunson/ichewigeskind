@@ -17,15 +17,19 @@ function GalleryCard({
   item,
   index,
   onClick,
+  priority = false,
 }: {
   item: GalleryItem;
   index: number;
   onClick: () => void;
+  priority?: boolean;
 }) {
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(priority);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (priority) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -37,7 +41,7 @@ function GalleryCard({
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [priority]);
 
   return (
     <button
@@ -50,12 +54,20 @@ function GalleryCard({
       style={{ transitionDelay: `${index * 40}ms` }}
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
+        {!imageLoaded && (
+          <div className="absolute inset-0 z-10 animate-pulse bg-muted" />
+        )}
         <Image
           src={item.src || "/placeholder.svg"}
           alt={item.alt}
           fill
-          className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+          priority={priority}
+          fetchPriority={priority ? "high" : "auto"}
+          className={`object-cover transition-all duration-300 group-hover:scale-105 ${
+            imageLoaded ? "opacity-100" : "opacity-0"
+          }`}
           sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
+          onLoad={() => setImageLoaded(true)}
         />
       </div>
     </button>
@@ -170,13 +182,14 @@ function ImageViewer({
   );
 }
 
-export function Gallery() {
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function Gallery({ initialItems = [] }: { initialItems?: GalleryItem[] }) {
+  const [items, setItems] = useState<GalleryItem[]>(initialItems);
+  const [loading, setLoading] = useState(initialItems.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   useEffect(() => {
+    if (initialItems.length > 0) return;
     fetch("/api/gallery")
       .then((res) => {
         if (!res.ok) return res.json().then((d) => { throw new Error(d.error ?? "Failed to load"); });
@@ -185,7 +198,7 @@ export function Gallery() {
       .then((data) => setItems(data.images ?? []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialItems.length]);
 
   const openViewer = (index: number) => setViewerIndex(index);
   const closeViewer = () => setViewerIndex(null);
@@ -199,7 +212,10 @@ export function Gallery() {
       {loading && (
         <div className={`grid ${GRID_COLS} gap-0`}>
           {[...Array(12)].map((_, i) => (
-            <div key={i} className="aspect-square animate-pulse bg-secondary" />
+            <div
+              key={i}
+              className="aspect-square animate-pulse bg-secondary"
+            />
           ))}
         </div>
       )}
@@ -218,6 +234,7 @@ export function Gallery() {
               item={item}
               index={index}
               onClick={() => openViewer(index)}
+              priority={index < 6}
             />
           ))}
         </div>
