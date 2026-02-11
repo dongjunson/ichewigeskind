@@ -8,6 +8,7 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/webp",
   "image/gif",
 ];
+const DRIVE_PAGE_SIZE = 30;
 
 export interface GalleryImage {
   id: string;
@@ -40,17 +41,30 @@ async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
   const drive = google.drive({ version: "v3", auth });
   const mimeQuery = SUPPORTED_IMAGE_TYPES.map((t) => `mimeType='${t}'`).join(" or ");
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
+  const files: DriveFile[] = [];
+  let pageToken: string | undefined;
 
-  const res = await drive.files.list({
-    q,
-    fields: "files(id,name,mimeType)",
-    orderBy: "createdTime desc",
-    pageSize: 100,
-    supportsAllDrives: true,
-    includeItemsFromAllDrives: true,
-  });
-  recordDriveUsage("files.list", { source: "lib/gallery", count: res.data.files?.length ?? 0 });
-  return (res.data.files ?? []) as DriveFile[];
+  do {
+    const res = await drive.files.list({
+      q,
+      fields: "nextPageToken,files(id,name,mimeType)",
+      orderBy: "createdTime desc",
+      pageSize: DRIVE_PAGE_SIZE,
+      pageToken,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+    const pageFiles = (res.data.files ?? []) as DriveFile[];
+    files.push(...pageFiles);
+    pageToken = res.data.nextPageToken ?? undefined;
+    recordDriveUsage("files.list", {
+      source: "lib/gallery",
+      count: pageFiles.length,
+      hasNextPage: !!pageToken,
+    });
+  } while (pageToken);
+
+  return files;
 }
 
 async function fetchWithApiKey(
@@ -62,41 +76,55 @@ async function fetchWithApiKey(
     .map((t) => `mimeType='${t}'`)
     .join(" or ");
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
-  const params = new URLSearchParams({
-    q,
-    key: apiKey,
-    fields: "files(id,name,mimeType)",
-    orderBy: "createdTime desc",
-    pageSize: "100",
-    supportsAllDrives: "true",
-    includeItemsFromAllDrives: "true",
-  });
 
   const headers: HeadersInit = {};
   if (resourceKey) {
     headers["X-Goog-Drive-Resource-Keys"] = `${folderId}/${resourceKey}`;
   }
+  const files: DriveFile[] = [];
+  let pageToken: string | undefined;
 
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?${params}`,
-    { headers }
-  );
+  do {
+    const params = new URLSearchParams({
+      q,
+      key: apiKey,
+      fields: "nextPageToken,files(id,name,mimeType)",
+      orderBy: "createdTime desc",
+      pageSize: String(DRIVE_PAGE_SIZE),
+      supportsAllDrives: "true",
+      includeItemsFromAllDrives: "true",
+    });
+    if (pageToken) params.set("pageToken", pageToken);
 
-  if (!res.ok) {
-    const text = await res.text();
-    let parsed: { error?: { message?: string } } = {};
-    try {
-      parsed = JSON.parse(text) as { error?: { message?: string } };
-    } catch {
-      /* ignore */
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files?${params}`,
+      { headers }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      let parsed: { error?: { message?: string } } = {};
+      try {
+        parsed = JSON.parse(text) as { error?: { message?: string } };
+      } catch {
+        /* ignore */
+      }
+      const msg = parsed.error?.message ?? text;
+      throw new Error(`Drive API ${res.status}: ${msg}`);
     }
-    const msg = parsed.error?.message ?? text;
-    throw new Error(`Drive API ${res.status}: ${msg}`);
-  }
 
-  const data = (await res.json()) as { files?: DriveFile[] };
-  recordDriveUsage("files.list", { source: "lib/gallery-apiKey", count: data.files?.length ?? 0 });
-  return data.files ?? [];
+    const data = (await res.json()) as { files?: DriveFile[]; nextPageToken?: string };
+    const pageFiles = data.files ?? [];
+    files.push(...pageFiles);
+    pageToken = data.nextPageToken ?? undefined;
+    recordDriveUsage("files.list", {
+      source: "lib/gallery-apiKey",
+      count: pageFiles.length,
+      hasNextPage: !!pageToken,
+    });
+  } while (pageToken);
+
+  return files;
 }
 
 async function fetchGalleryImages(): Promise<GalleryImage[]> {

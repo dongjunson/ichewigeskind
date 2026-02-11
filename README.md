@@ -49,7 +49,7 @@ npm run dev
 1. page.tsx (서버)
    └─ getGalleryImages() 호출
       └─ lib/gallery.ts
-         └─ unstable_cache(5분) → Drive API → 이미지 메타데이터 목록
+         └─ unstable_cache(5분) → Drive API(30개 단위 페이지네이션) → 이미지 메타데이터 목록
 
 2. Hero: images 중 랜덤 1장 → initialSrc
 3. Gallery: images 전체 → initialItems
@@ -101,6 +101,8 @@ lib/
 
 - **목록 캐시**  
   `lib/gallery.ts`에서 `unstable_cache`로 5분간 캐시.
+- **목록 수집 방식**  
+  Drive API `nextPageToken`을 따라 30개씩 반복 조회하여 누락 없이 전체 목록을 수집.
 - **이미지 캐시**  
   `/api/gallery/image`에서 `Cache-Control`로 캐시:
   - `max-age=86400` (브라우저 24시간)
