@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
+import { recordDriveUsage } from "@/lib/drive-monitor";
 
 const SUPPORTED_IMAGE_TYPES = [
   "image/jpeg",
@@ -43,6 +44,7 @@ async function fetchWithServiceAccount(folderId: string): Promise<DriveFile[]> {
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
   });
+  recordDriveUsage("files.list", { source: "api/gallery", count: res.data.files?.length ?? 0 });
   return (res.data.files ?? []) as DriveFile[];
 }
 
@@ -88,6 +90,7 @@ async function fetchWithApiKey(
   }
 
   const data = (await res.json()) as { files?: DriveFile[] };
+  recordDriveUsage("files.list", { source: "api/gallery-apiKey", count: data.files?.length ?? 0 });
   return data.files ?? [];
 }
 

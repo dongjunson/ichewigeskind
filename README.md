@@ -68,16 +68,30 @@ npm run dev
 ```
 app/
 ├── page.tsx              # 홈: getGalleryImages → Hero, Gallery에 전달
-├── api/gallery/
-│   ├── route.ts          # 클라이언트 폴백용 목록 API
-│   └── image/route.ts    # 이미지 프록시 (Drive → 응답)
+├── api/
+│   ├── gallery/
+│   │   ├── route.ts      # 클라이언트 폴백용 목록 API
+│   │   └── image/route.ts # 이미지 프록시 (Drive → 응답)
+│   └── drive-usage/
+│       └── route.ts      # Drive API 사용량 통계
 components/
 ├── hero.tsx              # 배경 랜덤, GSAP 텍스트 애니메이션
 ├── gallery.tsx           # 그리드, 클릭 뷰어, IntersectionObserver
 └── footer.tsx
 lib/
-└── gallery.ts            # Drive API + unstable_cache
+├── gallery.ts            # Drive API + unstable_cache
+└── drive-monitor.ts      # Drive API 사용량 모니터
 ```
+
+### Drive API 사용량 모니터
+
+| 항목 | 설명 |
+|------|------|
+| **추적 대상** | `files.list` (목록), `files.get` (이미지) |
+| **통계 조회** | `GET /api/drive-usage` |
+| **프로덕션 인증** | `DRIVE_USAGE_ACCESS_KEY` 설정 시 `Authorization: Bearer <key>` 필요 |
+| **개발 모드** | 각 호출 시 콘솔 로그 출력 |
+| **주의** | in-memory 집계, 서버 재시작 시 초기화 |
 
 ---
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { recordDriveUsage } from "@/lib/drive-monitor";
 
 export async function GET(request: NextRequest) {
   const id = request.nextUrl.searchParams.get("id");
@@ -42,6 +43,8 @@ export async function GET(request: NextRequest) {
       console.error("Drive API image fetch failed:", driveRes.status, text);
       return NextResponse.json({ error: "Failed to fetch image" }, { status: 502 });
     }
+
+    recordDriveUsage("files.get", { fileId: id });
 
     const contentType = driveRes.headers.get("content-type") ?? "image/jpeg";
     const body = driveRes.body;
