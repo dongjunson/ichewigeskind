@@ -329,7 +329,7 @@ export function Gallery({
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="text-[11px] font-medium tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                className="text-xs font-normal text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
               >
                 {loadingMore ? "loading..." : "more"}
               </button>
