@@ -61,7 +61,7 @@ export function Footer() {
   return (
     <footer
       ref={footerRef}
-      className="px-5 py-12 sm:px-6 md:px-16 lg:px-24 sm:py-16 border-t border-border"
+      className="px-5 py-12 sm:px-6 md:px-16 lg:px-24 sm:py-16"
     >
       <div
         className="max-w-7xl mx-auto flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between"

@@ -58,3 +58,31 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Subtle CTA motion for gallery "more" button */
+@keyframes subtle-breathe {
+  0%,
+  100% {
+    opacity: 0.72;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+.more-button-soft {
+  animation: subtle-breathe 2.8s ease-in-out infinite;
+}
+
+.more-button-soft:hover,
+.more-button-soft:focus-visible {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-button-soft {
+    animation: none;
+  }
+}
