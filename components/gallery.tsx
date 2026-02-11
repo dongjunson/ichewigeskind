@@ -271,7 +271,7 @@ export function Gallery({
     setViewerIndex((i) => (i === null ? null : (i + 1) % items.length));
 
   return (
-    <section className="w-full">
+    <section className="w-full pb-16 sm:pb-24">
       {loading && (
         <div className={`grid ${GRID_COLS} gap-0`}>
           {[...Array(12)].map((_, i) => (
@@ -324,12 +324,12 @@ export function Gallery({
             ))}
           </div>
           {nextPageToken && (
-            <div className="mt-6 flex justify-center">
+            <div className="mt-8 flex justify-center">
               <button
                 type="button"
                 onClick={loadMore}
                 disabled={loadingMore}
-                className="text-xs font-normal text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
+                className="text-[12px] font-serif italic tracking-[0.03em] text-primary/80 transition-colors hover:text-primary disabled:opacity-40"
               >
                 {loadingMore ? "loading..." : "more"}
               </button>
