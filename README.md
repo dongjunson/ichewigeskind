@@ -37,8 +37,6 @@ npm run dev
 | `GOOGLE_DRIVE_FOLDER_ID` | 갤러리 이미지가 있는 Drive 폴더 ID | ✅ |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | 서비스 계정 JSON (한 줄, minified) | 옵션 A |
 | `GOOGLE_DRIVE_API_KEY` | Drive API 키 (공개 폴더용) | 옵션 B |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 측정 ID (G-…) | 선택 |
-
 - **옵션 A (권장)**  
   서비스 계정 JSON 사용. 폴더를 서비스 계정 이메일에 공유(Editor)하고, JSON 전체를 한 줄로 붙여넣기.
 - **옵션 B**  
@@ -137,9 +135,8 @@ lib/
 
 ### Google Analytics (GA4)
 
-- 측정 ID는 **런타임**에 `/api/public-config`로 전달되고, 클라이언트에서 gtag 스크립트를 주입.
-- [GA4](https://analytics.google.com) → 속성 → 데이터 스트림 → 웹 → 측정 ID(G-…) 복사 후 env에 추가.
-- **Vercel**: Environment Variables에 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 추가하면 **재배포 없이** 다음 방문부터 태그 적용됨 (빌드 시점이 아닌 요청 시점에 env 사용).
+- `app/layout.tsx`의 `<head>`에 gtag 스크립트 직접 포함 (측정 ID: `G-ZZWC1NB1QS`).
+- `beforeInteractive`로 주입되어 배포 환경에서도 태그 감지·웹 스트림 테스트 가능.
 
 ---
 

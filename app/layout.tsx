@@ -1,9 +1,11 @@
 import React from "react"
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Playfair_Display, Gowun_Batang } from "next/font/google";
 
-import { AnalyticsLoader } from "@/components/analytics-loader";
 import "./globals.css";
+
+const GA_MEASUREMENT_ID = "G-ZZWC1NB1QS";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -45,20 +47,30 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
-export const dynamic = "force-dynamic";
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || null;
-
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${gowunBatang.variable}`}>
+      <head>
+        <Script
+          id="gtag-src"
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          strategy="beforeInteractive"
+        />
+        <Script id="gtag-config" strategy="beforeInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
+      </head>
       <body className="font-sans antialiased">
         {children}
-        <AnalyticsLoader gaId={gaId} />
       </body>
     </html>
   );
