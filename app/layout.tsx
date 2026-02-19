@@ -45,16 +45,20 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || null;
+
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${gowunBatang.variable}`}>
       <body className="font-sans antialiased">
         {children}
-        <AnalyticsLoader />
+        <AnalyticsLoader gaId={gaId} />
       </body>
     </html>
   );

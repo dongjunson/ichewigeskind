@@ -1,23 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 
-export function AnalyticsLoader() {
-  const [gaId, setGaId] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/public-config")
-      .then((res) => res.json())
-      .then((data: { gaMeasurementId?: string | null }) => {
-        const id = data.gaMeasurementId?.trim();
-        if (id) setGaId(id);
-      })
-      .catch(() => {});
-  }, []);
+export function AnalyticsLoader({ gaId }: { gaId: string | null }) {
+  const injected = useRef(false);
 
   useEffect(() => {
-    if (!gaId) return;
+    if (!gaId || injected.current) return;
     if (document.querySelector(`script[src*="googletagmanager.com/gtag"]`)) return;
+
+    injected.current = true;
 
     const script1 = document.createElement("script");
     script1.async = true;
