@@ -2,7 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Gowun_Batang } from "next/font/google";
 
-import { Analytics } from "@/components/analytics";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,11 +50,24 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${gowunBatang.variable}`}>
       <body className="font-sans antialiased">
         {children}
-        <Analytics />
+        {gaId && (
+          <>
+            <Script
+              id="gtag-src"
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="beforeInteractive"
+            />
+            <Script id="gtag-config" strategy="beforeInteractive">
+              {`window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', '${gaId}');`}
+            </Script>
+          </>
+        )}
       </body>
     </html>
   );

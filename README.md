@@ -139,7 +139,8 @@ lib/
 
 - `@next/third-parties`의 `GoogleAnalytics` 사용. `NEXT_PUBLIC_GA_MEASUREMENT_ID` 설정 시 방문자·페이지뷰 수집.
 - [GA4](https://analytics.google.com) → 속성 → 데이터 스트림 → 웹 → 측정 ID(G-…) 복사 후 env에 추가.
-- **Vercel 배포 시**: Environment Variables에 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 추가한 뒤 **반드시 재배포**. (빌드 시점에 값이 들어가므로 설정만 하고 재배포하지 않으면 태그가 안 보일 수 있음)
+- **Vercel 배포 시**: Environment Variables에 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 추가한 뒤 **반드시 재배포**. (빌드 시점에 값이 들어가므로 설정만 하고 재배포하지 않으면 태그가 안 보임)
+- GA 스크립트는 `beforeInteractive`로 `<head>`에 주입됨. 배포 후 페이지 소스에서 `googletagmanager.com/gtag` 검색해 스크립트 노출 여부 확인.
 
 ---
 
