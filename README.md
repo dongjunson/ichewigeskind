@@ -37,6 +37,7 @@ npm run dev
 | `GOOGLE_DRIVE_FOLDER_ID` | 갤러리 이미지가 있는 Drive 폴더 ID | ✅ |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | 서비스 계정 JSON (한 줄, minified) | 옵션 A |
 | `GOOGLE_DRIVE_API_KEY` | Drive API 키 (공개 폴더용) | 옵션 B |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 측정 ID (G-…) | 선택 |
 
 - **옵션 A (권장)**  
   서비스 계정 JSON 사용. 폴더를 서비스 계정 이메일에 공유(Editor)하고, JSON 전체를 한 줄로 붙여넣기.
@@ -133,6 +134,12 @@ lib/
 ### Next.js 이미지 설정
 
 - `next.config.mjs`의 `images.localPatterns`에 `/api/gallery/image` 등록 (쿼리 스트링 허용).
+
+### Google Analytics (GA4)
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` 설정 시 방문자·페이지뷰 수집.
+- [GA4](https://analytics.google.com) → 속성 → 데이터 스트림 → 웹 → 측정 ID(G-…) 복사 후 env에 추가.
+- Vercel: 프로젝트 → Settings → Environment Variables에 동일 키 추가.
 
 ---
 
