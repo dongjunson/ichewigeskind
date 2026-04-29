@@ -1,13 +1,8 @@
-import { unstable_cache } from "next/cache";
 import { google } from "googleapis";
+import { unstable_cache } from "next/cache";
 import { recordDriveUsage } from "./drive-monitor";
 
-const SUPPORTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
+const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DRIVE_PAGE_SIZE = 30;
 
 export interface GalleryImage {
@@ -15,12 +10,14 @@ export interface GalleryImage {
   src: string;
   alt: string;
   title: string;
+  createdTime?: string;
 }
 
 interface DriveFile {
   id: string;
   name: string;
   mimeType?: string;
+  createdTime?: string;
 }
 
 interface DriveListPage {
@@ -39,6 +36,7 @@ function toGalleryImage(file: DriveFile): GalleryImage {
     src: `/api/gallery/image?id=${encodeURIComponent(file.id)}`,
     alt: file.name.replace(/\.[^/.]+$/, ""),
     title: file.name.replace(/\.[^/.]+$/, ""),
+    createdTime: file.createdTime,
   };
 }
 
@@ -65,7 +63,7 @@ async function fetchWithServiceAccount(
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
   const res = await drive.files.list({
     q,
-    fields: "nextPageToken,files(id,name,mimeType)",
+    fields: "nextPageToken,files(id,name,mimeType,createdTime)",
     orderBy: "createdTime desc",
     pageSize: DRIVE_PAGE_SIZE,
     pageToken,
@@ -89,9 +87,7 @@ async function fetchWithApiKey(
   resourceKey?: string,
   pageToken?: string
 ): Promise<DriveListPage> {
-  const mimeQuery = SUPPORTED_IMAGE_TYPES
-    .map((t) => `mimeType='${t}'`)
-    .join(" or ");
+  const mimeQuery = SUPPORTED_IMAGE_TYPES.map((t) => `mimeType='${t}'`).join(" or ");
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
 
   const headers: HeadersInit = {};
@@ -101,7 +97,7 @@ async function fetchWithApiKey(
   const params = new URLSearchParams({
     q,
     key: apiKey,
-    fields: "nextPageToken,files(id,name,mimeType)",
+    fields: "nextPageToken,files(id,name,mimeType,createdTime)",
     orderBy: "createdTime desc",
     pageSize: String(DRIVE_PAGE_SIZE),
     supportsAllDrives: "true",
@@ -109,10 +105,7 @@ async function fetchWithApiKey(
   });
   if (pageToken) params.set("pageToken", pageToken);
 
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?${params}`,
-    { headers }
-  );
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, { headers });
 
   if (!res.ok) {
     const text = await res.text();
@@ -151,9 +144,15 @@ async function fetchGalleryPage(pageToken?: string): Promise<GalleryPage> {
     return { images: [], nextPageToken: null };
   }
 
-  const page = useServiceAccount
-    ? await fetchWithServiceAccount(folderId, pageToken)
-    : await fetchWithApiKey(folderId, apiKey!, resourceKey, pageToken);
+  let page: DriveListPage;
+  if (useServiceAccount) {
+    page = await fetchWithServiceAccount(folderId, pageToken);
+  } else {
+    if (!apiKey) {
+      return { images: [], nextPageToken: null };
+    }
+    page = await fetchWithApiKey(folderId, apiKey, resourceKey, pageToken);
+  }
 
   return {
     images: page.files.map(toGalleryImage),
@@ -163,7 +162,7 @@ async function fetchGalleryPage(pageToken?: string): Promise<GalleryPage> {
 
 export const getInitialGalleryPage = unstable_cache(
   () => fetchGalleryPage(),
-  ["gallery-images-initial-page"],
+  ["gallery-images-initial-page-with-created-time"],
   { revalidate: 300 }
 );
 

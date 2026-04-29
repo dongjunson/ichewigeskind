@@ -23,7 +23,7 @@ export function Navigation() {
       } ${visible ? "opacity-100" : "opacity-0"}`}
     >
       <a
-        href="#"
+        href="/"
         className="font-serif text-lg text-primary tracking-wide transition-opacity duration-300 hover:opacity-70"
       >
         ichewigeskind

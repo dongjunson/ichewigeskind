@@ -1,7 +1,7 @@
-import React from "react"
 import type { Metadata, Viewport } from "next";
+import { Gowun_Batang, IBM_Plex_Mono, Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
-import { Inter, Playfair_Display, Gowun_Batang } from "next/font/google";
+import type React from "react";
 
 import "./globals.css";
 
@@ -21,6 +21,12 @@ const gowunBatang = Gowun_Batang({
   weight: "400",
   subsets: ["latin"],
   variable: "--font-gowun-batang",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  weight: ["400", "500"],
+  subsets: ["latin"],
+  variable: "--font-date",
 });
 
 export const metadata: Metadata = {
@@ -53,7 +59,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${gowunBatang.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${playfair.variable} ${gowunBatang.variable} ${ibmPlexMono.variable}`}
+    >
       <head>
         <Script
           id="gtag-src"
@@ -69,9 +79,7 @@ export default function RootLayout({
           `}
         </Script>
       </head>
-      <body className="font-sans antialiased">
-        {children}
-      </body>
+      <body className="font-sans antialiased">{children}</body>
     </html>
   );
 }

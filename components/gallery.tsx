@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import Image from "next/image";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface GalleryItem {
   id: string;
   src: string;
   alt: string;
   title: string;
+  createdTime?: string;
 }
 
 interface GalleryResponse {
@@ -18,6 +19,14 @@ interface GalleryResponse {
 }
 
 const GRID_COLS = "grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6";
+const LOADING_PLACEHOLDERS = Array.from(
+  { length: 12 },
+  (_, index) => `loading-placeholder-${index}`
+);
+
+function formatDriveDate(createdTime?: string) {
+  return createdTime?.slice(0, 10) ?? null;
+}
 
 function GalleryCard({
   item,
@@ -29,13 +38,10 @@ function GalleryCard({
   priority?: boolean;
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const createdDate = formatDriveDate(item.createdTime);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group w-full text-left"
-    >
+    <button type="button" onClick={onClick} className="group w-full text-left">
       <div className="relative aspect-square overflow-hidden bg-secondary">
         {/* 스켈레톤: 영역 세팅 시점부터 이미지 로드 전까지 항상 표시 */}
         <div
@@ -76,6 +82,11 @@ function GalleryCard({
           sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
           onLoad={() => setImageLoaded(true)}
         />
+        {createdDate && (
+          <span className="pointer-events-none absolute right-2 bottom-2 z-30 inline-flex h-5 min-w-[4.5rem] items-center justify-center rounded-sm border border-white/25 bg-black/75 px-1.5 font-date text-[10px] font-medium leading-none text-white shadow-sm backdrop-blur-sm">
+            {createdDate}
+          </span>
+        )}
       </div>
     </button>
   );
@@ -94,12 +105,9 @@ function ImageViewer({
   onPrev: () => void;
   onNext: () => void;
 }) {
-  const [imageLoading, setImageLoading] = useState(true);
+  const [loadedImageId, setLoadedImageId] = useState<string | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const item = items[currentIndex];
-
-  useEffect(() => {
-    setImageLoading(true);
-  }, [currentIndex]);
 
   useEffect(() => {
     if (!item) return;
@@ -117,14 +125,47 @@ function ImageViewer({
   }, [item, onClose, onPrev, onNext]);
 
   if (!item) return null;
+  const imageLoading = loadedImageId !== item.id;
+  const hasMultipleItems = items.length > 1;
+
+  const handleTouchEnd = (x: number, y: number) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || !hasMultipleItems) return;
+
+    const deltaX = x - start.x;
+    const deltaY = y - start.y;
+    const isHorizontalSwipe = Math.abs(deltaX) > 48 && Math.abs(deltaX) > Math.abs(deltaY) * 1.4;
+
+    if (!isHorizontalSwipe) return;
+    if (deltaX > 0) {
+      onPrev();
+    } else {
+      onNext();
+    }
+  };
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex touch-pan-y items-center justify-center bg-black/95"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-label="Image viewer"
+      tabIndex={-1}
+      onTouchStart={(e) => {
+        const touch = e.touches[0];
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+      }}
+      onTouchEnd={(e) => {
+        const touch = e.changedTouches[0];
+        handleTouchEnd(touch.clientX, touch.clientY);
+      }}
     >
       <button
         type="button"
@@ -132,13 +173,13 @@ function ImageViewer({
           e.stopPropagation();
           onClose();
         }}
-        className="absolute right-4 top-4 z-[60] rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+        className="absolute right-4 top-4 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/80 shadow-lg backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         aria-label="Close"
       >
         <X className="h-6 w-6" />
       </button>
 
-      {items.length > 1 && (
+      {hasMultipleItems && (
         <>
           <button
             type="button"
@@ -146,10 +187,10 @@ function ImageViewer({
               e.stopPropagation();
               onPrev();
             }}
-            className="absolute left-4 top-1/2 z-[60] -translate-y-1/2 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            className="absolute left-3 top-1/2 z-[60] inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/85 shadow-lg backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:left-4 sm:h-14 sm:w-14"
             aria-label="Previous"
           >
-            <ChevronLeft className="h-8 w-8" />
+            <ChevronLeft className="h-7 w-7 sm:h-8 sm:w-8" />
           </button>
           <button
             type="button"
@@ -157,18 +198,15 @@ function ImageViewer({
               e.stopPropagation();
               onNext();
             }}
-            className="absolute right-4 top-1/2 z-[60] -translate-y-1/2 rounded-full p-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-1/2 z-[60] inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/85 shadow-lg backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:right-4 sm:h-14 sm:w-14"
             aria-label="Next"
           >
-            <ChevronRight className="h-8 w-8" />
+            <ChevronRight className="h-7 w-7 sm:h-8 sm:w-8" />
           </button>
         </>
       )}
 
-      <div
-        className="relative z-[50] flex max-h-[90vh] max-w-[90vw] items-center justify-center min-h-[200px]"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative z-[50] flex max-h-[90vh] max-w-[90vw] items-center justify-center min-h-[200px]">
         {imageLoading && (
           <div className="absolute inset-0 flex items-center justify-center gap-2">
             <div className="flex gap-1">
@@ -182,15 +220,14 @@ function ImageViewer({
             </div>
           </div>
         )}
-        {/* Use proxy for reliable display (Drive direct URLs often fail in img) */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {/* biome-ignore lint/performance/noImgElement: Drive proxy images need natural lightbox sizing. */}
         <img
           src={`/api/gallery/image?id=${encodeURIComponent(item.id)}`}
           alt={item.alt}
           className={`max-h-[90vh] max-w-full w-auto object-contain transition-all duration-500 ease-out ${
             imageLoading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
           }`}
-          onLoad={() => setImageLoading(false)}
+          onLoad={() => setLoadedImageId(item.id)}
         />
       </div>
     </div>
@@ -208,9 +245,7 @@ export function Gallery({
   const [loading, setLoading] = useState(initialItems.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [nextPageToken, setNextPageToken] = useState<string | null>(
-    initialNextPageToken
-  );
+  const [nextPageToken, setNextPageToken] = useState<string | null>(initialNextPageToken);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
 
@@ -267,16 +302,15 @@ export function Gallery({
   const closeViewer = () => setViewerIndex(null);
   const goPrev = () =>
     setViewerIndex((i) => (i === null ? null : (i - 1 + items.length) % items.length));
-  const goNext = () =>
-    setViewerIndex((i) => (i === null ? null : (i + 1) % items.length));
+  const goNext = () => setViewerIndex((i) => (i === null ? null : (i + 1) % items.length));
 
   return (
-    <section className="w-full pb-16 sm:pb-24">
+    <section id="work" className="w-full pb-16 sm:pb-24">
       {loading && (
         <div className={`grid ${GRID_COLS} gap-0`}>
-          {[...Array(12)].map((_, i) => (
+          {LOADING_PLACEHOLDERS.map((placeholder, i) => (
             <div
-              key={i}
+              key={placeholder}
               className="relative aspect-square overflow-hidden bg-secondary flex items-center justify-center"
             >
               <div className="absolute inset-0 bg-accent animate-pulse" />

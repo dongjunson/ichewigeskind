@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useEffect, useRef } from "react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -59,13 +59,8 @@ export function Footer() {
   }, []);
 
   return (
-    <footer
-      ref={footerRef}
-      className="px-5 py-12 sm:px-6 md:px-16 lg:px-24 sm:py-16"
-    >
-      <div
-        className="max-w-7xl mx-auto flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between"
-      >
+    <footer ref={footerRef} className="px-5 py-12 sm:px-6 md:px-16 lg:px-24 sm:py-16">
+      <div className="max-w-7xl mx-auto flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
         <div ref={leftRef}>
           <p className="font-serif text-xl sm:text-2xl text-primary mb-1.5 sm:mb-2 opacity-0">
             ich ewiges kind.

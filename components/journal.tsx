@@ -63,13 +63,9 @@ function JournalCard({ entry, index }: { entry: JournalEntry; index: number }) {
         <time className="font-sans text-xs uppercase tracking-[0.2em] text-muted-foreground">
           {entry.date}
         </time>
-        <span className="font-sans text-xs text-muted-foreground">
-          {entry.film}
-        </span>
+        <span className="font-sans text-xs text-muted-foreground">{entry.film}</span>
       </div>
-      <h3 className="font-serif text-2xl md:text-3xl text-primary mb-4">
-        {entry.title}
-      </h3>
+      <h3 className="font-serif text-2xl md:text-3xl text-primary mb-4">{entry.title}</h3>
       <p className="font-sans text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
         {entry.excerpt}
       </p>
@@ -102,11 +98,7 @@ export function Journal() {
   }, []);
 
   return (
-    <section
-      ref={ref}
-      id="journal"
-      className="px-6 py-32 md:px-16 lg:px-24 bg-card"
-    >
+    <section ref={ref} id="journal" className="px-6 py-32 md:px-16 lg:px-24 bg-card">
       <div className="max-w-3xl mx-auto">
         <div className="mb-16">
           <p
@@ -118,9 +110,7 @@ export function Journal() {
           </p>
           <h2
             className={`font-serif text-4xl md:text-5xl text-primary transition-all duration-[1500ms] delay-200 ${
-              isVisible
-                ? "opacity-100 translate-y-0 blur-0"
-                : "opacity-0 translate-y-4 blur-[2px]"
+              isVisible ? "opacity-100 translate-y-0 blur-0" : "opacity-0 translate-y-4 blur-[2px]"
             }`}
           >
             Darkroom Notes

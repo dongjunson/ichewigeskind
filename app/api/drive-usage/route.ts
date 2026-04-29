@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getDriveUsage } from "@/lib/drive-monitor";
 
 export async function GET(request: NextRequest) {

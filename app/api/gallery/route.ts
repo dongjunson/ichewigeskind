@@ -1,19 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { type NextRequest, NextResponse } from "next/server";
 import { recordDriveUsage } from "@/lib/drive-monitor";
 
-const SUPPORTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
+const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DRIVE_PAGE_SIZE = 30;
 
 interface DriveFile {
   id: string;
   name: string;
   mimeType?: string;
+  createdTime?: string;
   thumbnailLink?: string;
   webContentLink?: string;
 }
@@ -46,7 +42,7 @@ async function fetchWithServiceAccount(
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
   const res = await drive.files.list({
     q,
-    fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink)",
+    fields: "nextPageToken,files(id,name,mimeType,createdTime,thumbnailLink,webContentLink)",
     orderBy: "createdTime desc",
     pageSize: DRIVE_PAGE_SIZE,
     pageToken,
@@ -70,9 +66,7 @@ async function fetchWithApiKey(
   resourceKey?: string,
   pageToken?: string
 ): Promise<DriveListPage> {
-  const mimeQuery = SUPPORTED_IMAGE_TYPES
-    .map((t) => `mimeType='${t}'`)
-    .join(" or ");
+  const mimeQuery = SUPPORTED_IMAGE_TYPES.map((t) => `mimeType='${t}'`).join(" or ");
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
 
   const headers: HeadersInit = {};
@@ -82,7 +76,7 @@ async function fetchWithApiKey(
   const params = new URLSearchParams({
     q,
     key: apiKey,
-    fields: "nextPageToken,files(id,name,mimeType,thumbnailLink,webContentLink)",
+    fields: "nextPageToken,files(id,name,mimeType,createdTime,thumbnailLink,webContentLink)",
     orderBy: "createdTime desc",
     pageSize: String(DRIVE_PAGE_SIZE),
     supportsAllDrives: "true",
@@ -90,10 +84,10 @@ async function fetchWithApiKey(
   });
   if (pageToken) params.set("pageToken", pageToken);
 
-  const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files?${params}`,
-    { headers, next: { revalidate: 3600 } }
-  );
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
+    headers,
+    next: { revalidate: 3600 },
+  });
 
   if (!res.ok) {
     const text = await res.text();
@@ -147,15 +141,28 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const page = useServiceAccount
-      ? await fetchWithServiceAccount(folderId, pageToken)
-      : await fetchWithApiKey(folderId, apiKey!, resourceKey, pageToken);
+    let page: DriveListPage;
+    if (useServiceAccount) {
+      page = await fetchWithServiceAccount(folderId, pageToken);
+    } else {
+      if (!apiKey) {
+        return NextResponse.json(
+          {
+            error:
+              "Set either GOOGLE_DRIVE_API_KEY (for public folder) or GOOGLE_SERVICE_ACCOUNT_JSON (recommended).",
+          },
+          { status: 500 }
+        );
+      }
+      page = await fetchWithApiKey(folderId, apiKey, resourceKey, pageToken);
+    }
 
     const images = page.files.map((file) => ({
       id: file.id,
       src: `/api/gallery/image?id=${encodeURIComponent(file.id)}`,
       alt: file.name.replace(/\.[^/.]+$/, ""),
       title: file.name.replace(/\.[^/.]+$/, ""),
+      createdTime: file.createdTime,
     }));
 
     return NextResponse.json({

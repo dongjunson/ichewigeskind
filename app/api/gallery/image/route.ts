@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { type NextRequest, NextResponse } from "next/server";
 import { recordDriveUsage } from "@/lib/drive-monitor";
 
 export async function GET(request: NextRequest) {
@@ -29,14 +29,11 @@ export async function GET(request: NextRequest) {
     const token = await client.getAccessToken();
     if (!token.token) throw new Error("No access token");
 
-    const driveRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
-      {
-        headers: {
-          Authorization: `Bearer ${token.token}`,
-        },
-      }
-    );
+    const driveRes = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`, {
+      headers: {
+        Authorization: `Bearer ${token.token}`,
+      },
+    });
 
     if (!driveRes.ok) {
       const text = await driveRes.text();
@@ -54,8 +51,7 @@ export async function GET(request: NextRequest) {
 
     return new NextResponse(body, {
       headers: {
-        "Cache-Control":
-          "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+        "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
         "Content-Type": contentType,
       },
     });

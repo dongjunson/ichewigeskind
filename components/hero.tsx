@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import gsap from "gsap";
+import Image from "next/image";
+import type { ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
-export function Hero({ initialSrc }: { initialSrc?: string | null }) {
+export function Hero({
+  initialSrc,
+  children,
+}: {
+  initialSrc?: string | null;
+  children?: ReactNode;
+}) {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -54,7 +61,7 @@ export function Hero({ initialSrc }: { initialSrc?: string | null }) {
   const bgSrc = initialSrc ?? "/images/hero.jpg";
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen flex items-end">
+    <section ref={sectionRef} className="relative min-h-[100svh] overflow-hidden">
       <div className="absolute inset-0">
         <Image
           src={bgSrc}
@@ -70,7 +77,8 @@ export function Hero({ initialSrc }: { initialSrc?: string | null }) {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
       </div>
 
-      <div className="relative z-10 w-full px-6 pb-24 md:px-16 lg:px-24">
+      <div className="relative z-10 grid min-h-[100svh] w-full grid-rows-[minmax(0,1fr)_auto] px-6 pb-14 pt-24 md:px-16 md:pb-20 md:pt-28 lg:px-24">
+        {children}
         <div className="max-w-3xl">
           <p
             ref={subtitleRef}

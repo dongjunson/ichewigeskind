@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 export function FeaturedImage() {
   const [isVisible, setIsVisible] = useState(false);
@@ -58,12 +58,8 @@ export function FeaturedImage() {
             <p className="font-sans text-xs uppercase tracking-[0.35em] text-primary/80 mb-2">
               Featured
             </p>
-            <h3 className="font-serif text-3xl md:text-4xl text-primary">
-              Reclamation
-            </h3>
-            <p className="font-sans text-xs text-primary/60 mt-2">
-              Kodak Ektar 100 -- Pentax 67
-            </p>
+            <h3 className="font-serif text-3xl md:text-4xl text-primary">Reclamation</h3>
+            <p className="font-sans text-xs text-primary/60 mt-2">Kodak Ektar 100 -- Pentax 67</p>
           </div>
         </div>
       </div>
