@@ -4,6 +4,7 @@ import { recordDriveUsage } from "./drive-monitor";
 
 const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DRIVE_PAGE_SIZE = 30;
+const GALLERY_REVALIDATE_SECONDS = 60;
 
 export interface GalleryImage {
   id: string;
@@ -162,8 +163,8 @@ async function fetchGalleryPage(pageToken?: string): Promise<GalleryPage> {
 
 export const getInitialGalleryPage = unstable_cache(
   () => fetchGalleryPage(),
-  ["gallery-images-initial-page-with-created-time"],
-  { revalidate: 300 }
+  ["gallery-images-initial-page-with-created-time-v2"],
+  { revalidate: GALLERY_REVALIDATE_SECONDS }
 );
 
 export async function getGalleryImages(): Promise<GalleryImage[]> {

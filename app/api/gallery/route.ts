@@ -4,6 +4,7 @@ import { recordDriveUsage } from "@/lib/drive-monitor";
 
 const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const DRIVE_PAGE_SIZE = 30;
+const GALLERY_REVALIDATE_SECONDS = 60;
 
 interface DriveFile {
   id: string;
@@ -86,7 +87,7 @@ async function fetchWithApiKey(
 
   const res = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`, {
     headers,
-    next: { revalidate: 3600 },
+    next: { revalidate: GALLERY_REVALIDATE_SECONDS },
   });
 
   if (!res.ok) {
