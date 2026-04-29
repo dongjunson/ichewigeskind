@@ -16,6 +16,18 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
   const [isReady, setIsReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const cardRefs = useRef<HTMLElement[]>([]);
+  const activeIndexTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+
+  const queueActiveIndex = (index: number | null) => {
+    if (activeIndexTimeoutRef.current) {
+      window.clearTimeout(activeIndexTimeoutRef.current);
+    }
+
+    activeIndexTimeoutRef.current = window.setTimeout(() => {
+      setActiveIndex(index);
+      activeIndexTimeoutRef.current = null;
+    }, 90);
+  };
 
   useLayoutEffect(() => {
     const mediaQuery = window.matchMedia(MOBILE_QUERY);
@@ -24,6 +36,14 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
     updateIsMobile();
     mediaQuery.addEventListener("change", updateIsMobile);
     return () => mediaQuery.removeEventListener("change", updateIsMobile);
+  }, []);
+
+  useLayoutEffect(() => {
+    return () => {
+      if (activeIndexTimeoutRef.current) {
+        window.clearTimeout(activeIndexTimeoutRef.current);
+      }
+    };
   }, []);
 
   useLayoutEffect(() => {
@@ -87,7 +107,7 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
         return Math.abs(event.clientX - aCenter) - Math.abs(event.clientX - bCenter);
       });
 
-    setActiveIndex(candidates[0]?.index ?? null);
+    queueActiveIndex(candidates[0]?.index ?? null);
   };
 
   return (
@@ -110,15 +130,15 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
                 activeIndex === index ? "is-active" : ""
               }`}
               onPointerEnter={() => {
-                if (isMobile && index === 0) setActiveIndex(index);
+                if (isMobile && index === 0) queueActiveIndex(index);
               }}
               onPointerLeave={() => {
-                if (isMobile && index === 0) setActiveIndex(null);
+                if (isMobile && index === 0) queueActiveIndex(null);
               }}
               onFocus={() => {
-                if (!isMobile || index === 0) setActiveIndex(index);
+                if (!isMobile || index === 0) queueActiveIndex(index);
               }}
-              onBlur={() => setActiveIndex(null)}
+              onBlur={() => queueActiveIndex(null)}
             >
               <Image
                 src={item.src}

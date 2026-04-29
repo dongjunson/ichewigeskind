@@ -140,9 +140,9 @@ html {
     background: hsl(var(--secondary));
     box-shadow: 0 30px 60px rgb(0 0 0 / 0.72);
     transition:
-      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
-      box-shadow 0.6s cubic-bezier(0.2, 0.8, 0.2, 1),
-      filter 0.6s ease;
+      transform 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 0.85s cubic-bezier(0.16, 1, 0.3, 1),
+      filter 0.75s ease;
     transform: translateX(var(--card-x)) translateZ(var(--card-z)) rotateY(var(--card-ry))
       scale(var(--card-scale));
     will-change: transform;
@@ -167,7 +167,6 @@ html {
     transition: transform 0.8s ease;
   }
 
-  .latest-showcase__card:hover .latest-showcase__image,
   .latest-showcase__card.is-active .latest-showcase__image {
     transform: scale(1.05);
   }
@@ -197,13 +196,11 @@ html {
     transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
-  .latest-showcase__card:hover .latest-showcase__action,
   .latest-showcase__card:focus-within .latest-showcase__action,
   .latest-showcase__card.is-active .latest-showcase__action {
     opacity: 1;
   }
 
-  .latest-showcase__card:hover .latest-showcase__button,
   .latest-showcase__card:focus-within .latest-showcase__button,
   .latest-showcase__card.is-active .latest-showcase__button {
     transform: translateY(0);
@@ -256,7 +253,6 @@ html {
     filter: grayscale(1) brightness(0.72);
   }
 
-  .latest-showcase__scene .latest-showcase__card:hover,
   .latest-showcase__scene .latest-showcase__card:focus-within,
   .latest-showcase__scene .latest-showcase__card.is-active {
     --card-scale: 1;

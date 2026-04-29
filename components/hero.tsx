@@ -82,9 +82,9 @@ export function Hero({
         <div className="max-w-3xl">
           <p
             ref={subtitleRef}
-            className="font-sans text-xs uppercase tracking-[0.35em] text-primary/75 mb-6 opacity-0 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
+            className="font-sans text-xs font-medium uppercase tracking-[0.22em] text-primary/75 mb-6 opacity-0 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
           >
-            A Film Photography Journal
+            A Journal of Analog Photography
           </p>
           <h1
             ref={titleRef}

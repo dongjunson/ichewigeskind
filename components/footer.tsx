@@ -65,8 +65,8 @@ export function Footer() {
           <p className="font-serif text-xl sm:text-2xl text-primary mb-1.5 sm:mb-2 opacity-0">
             ich ewiges kind.
           </p>
-          <p className="font-sans text-xs text-muted-foreground mb-1.5 sm:mb-2 opacity-0">
-            A journal of analog photography
+          <p className="font-serif text-[11px] italic tracking-[0.02em] text-muted-foreground mb-1.5 sm:mb-2 opacity-0">
+            A Journal of Analog Photography
           </p>
           <p className="font-sans text-xs text-muted-foreground opacity-0">
             love@ichewigeskind.com
