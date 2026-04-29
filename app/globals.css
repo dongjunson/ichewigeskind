@@ -82,6 +82,16 @@ html {
 }
 
 @layer components {
+  .gallery-grid:has(.gallery-card:hover) .gallery-card__image,
+  .gallery-grid:has(.gallery-card:focus-visible) .gallery-card__image {
+    filter: grayscale(1) brightness(0.72);
+  }
+
+  .gallery-grid .gallery-card:hover .gallery-card__image,
+  .gallery-grid .gallery-card:focus-visible .gallery-card__image {
+    filter: grayscale(0) brightness(1);
+  }
+
   .latest-showcase {
     position: relative;
     z-index: 20;
@@ -145,8 +155,8 @@ html {
     content: "";
     background: linear-gradient(
       to top,
-      rgb(0 0 0 / 0.92) 0%,
-      rgb(0 0 0 / 0.42) 42%,
+      rgb(0 0 0 / 0.42) 0%,
+      rgb(0 0 0 / 0.18) 36%,
       transparent 100%
     );
   }
@@ -204,7 +214,7 @@ html {
     --card-z: -260px;
     --card-ry: 22deg;
     z-index: 1;
-    filter: brightness(0.5) blur(1px);
+    filter: brightness(0.74);
   }
 
   .latest-showcase__card.card-2 {
@@ -212,7 +222,7 @@ html {
     --card-z: -150px;
     --card-ry: 15deg;
     z-index: 2;
-    filter: brightness(0.7);
+    filter: brightness(0.86);
   }
 
   .latest-showcase__card.card-3 {
@@ -230,7 +240,7 @@ html {
     --card-z: -150px;
     --card-ry: -15deg;
     z-index: 2;
-    filter: brightness(0.7);
+    filter: brightness(0.86);
   }
 
   .latest-showcase__card.card-5 {
@@ -238,16 +248,18 @@ html {
     --card-z: -260px;
     --card-ry: -22deg;
     z-index: 1;
-    filter: brightness(0.5) blur(1px);
+    filter: brightness(0.74);
   }
 
   .latest-showcase__scene:hover .latest-showcase__card {
-    filter: brightness(0.32) blur(4px);
+    --card-scale: 0.94;
+    filter: grayscale(1) brightness(0.72);
   }
 
   .latest-showcase__scene .latest-showcase__card:hover,
   .latest-showcase__scene .latest-showcase__card:focus-within,
   .latest-showcase__scene .latest-showcase__card.is-active {
+    --card-scale: 1;
     z-index: 10;
     filter: brightness(1) blur(0);
     box-shadow:
@@ -306,13 +318,13 @@ html {
     }
 
     .latest-showcase__stage {
-      height: 25rem;
+      height: clamp(18rem, 47svh, 22rem);
       perspective: 900px;
     }
 
     .latest-showcase__card {
-      --card-w: min(68vw, 18rem);
-      --card-h: 23rem;
+      --card-w: min(66vw, 16.5rem);
+      --card-h: min(48svh, 20.5rem);
     }
 
     .latest-showcase__card.card-2 {

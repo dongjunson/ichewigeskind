@@ -77,18 +77,18 @@ export function Hero({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
       </div>
 
-      <div className="relative z-10 grid min-h-[100svh] w-full grid-rows-[minmax(0,1fr)_auto] px-6 pb-14 pt-24 md:px-16 md:pb-20 md:pt-28 lg:px-24">
+      <div className="relative z-10 grid min-h-[100svh] w-full grid-rows-[minmax(0,1fr)_auto] gap-6 px-6 pb-14 pt-24 md:gap-8 md:px-16 md:pb-20 md:pt-28 lg:px-24">
         {children}
         <div className="max-w-3xl">
           <p
             ref={subtitleRef}
-            className="font-sans text-xs uppercase tracking-[0.35em] text-muted-foreground mb-6 opacity-0"
+            className="font-sans text-xs uppercase tracking-[0.35em] text-primary/75 mb-6 opacity-0 drop-shadow-[0_2px_12px_rgba(0,0,0,0.75)]"
           >
             A Film Photography Journal
           </p>
           <h1
             ref={titleRef}
-            className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight text-primary opacity-0"
+            className="font-serif text-5xl md:text-7xl lg:text-8xl leading-[0.9] tracking-tight text-primary opacity-0 drop-shadow-[0_3px_18px_rgba(0,0,0,0.82)]"
           >
             ich ewiges kind.
           </h1>

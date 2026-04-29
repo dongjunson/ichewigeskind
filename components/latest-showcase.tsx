@@ -7,14 +7,24 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { GalleryImage } from "@/lib/gallery";
 
 const CARD_CLASSES = ["card-3", "card-2", "card-4", "card-1", "card-5"];
-const VISUAL_REGION_TO_ITEM_INDEX = [3, 1, 0, 2, 4];
 const OPEN_DELAYS = [0, 0.12, 0.12, 0.24, 0.24];
+const MOBILE_QUERY = "(max-width: 640px)";
 
 export function LatestShowcase({ items }: { items: GalleryImage[] }) {
   const latestItems = items.slice(0, 5);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const cardRefs = useRef<HTMLElement[]>([]);
+
+  useLayoutEffect(() => {
+    const mediaQuery = window.matchMedia(MOBILE_QUERY);
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+
+    updateIsMobile();
+    mediaQuery.addEventListener("change", updateIsMobile);
+    return () => mediaQuery.removeEventListener("change", updateIsMobile);
+  }, []);
 
   useLayoutEffect(() => {
     const cards = cardRefs.current.filter((card) => getComputedStyle(card).display !== "none");
@@ -58,21 +68,26 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
   if (latestItems.length === 0) return null;
 
   const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!isReady) return;
+    if (!isReady || isMobile) return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const pointerRatio = (event.clientX - rect.left) / rect.width;
-    const nextIndex =
-      latestItems.length === 5
-        ? [0.3, 0.44, 0.56, 0.7].findIndex((edge) => pointerRatio < edge)
-        : Math.floor(pointerRatio * latestItems.length);
+    const candidates = cardRefs.current
+      .map((card, index) => ({ card, index, rect: card?.getBoundingClientRect() }))
+      .filter(({ card, rect }) => {
+        if (!card || !rect || getComputedStyle(card).display === "none") return false;
+        return (
+          event.clientX >= rect.left &&
+          event.clientX <= rect.right &&
+          event.clientY >= rect.top &&
+          event.clientY <= rect.bottom
+        );
+      })
+      .sort((a, b) => {
+        const aCenter = a.rect.left + a.rect.width / 2;
+        const bCenter = b.rect.left + b.rect.width / 2;
+        return Math.abs(event.clientX - aCenter) - Math.abs(event.clientX - bCenter);
+      });
 
-    const normalizedIndex =
-      nextIndex === -1 ? latestItems.length - 1 : Math.min(latestItems.length - 1, nextIndex);
-    const visualIndex = Math.max(0, normalizedIndex);
-    setActiveIndex(
-      latestItems.length === 5 ? VISUAL_REGION_TO_ITEM_INDEX[visualIndex] : visualIndex
-    );
+    setActiveIndex(candidates[0]?.index ?? null);
   };
 
   return (
@@ -81,7 +96,7 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
         className={`latest-showcase__stage ${isReady ? "is-ready" : "is-animating"}`}
         onPointerMove={handlePointerMove}
         onPointerLeave={() => {
-          if (isReady) setActiveIndex(null);
+          if (isReady && !isMobile) setActiveIndex(null);
         }}
       >
         <div className="latest-showcase__scene">
@@ -94,7 +109,16 @@ export function LatestShowcase({ items }: { items: GalleryImage[] }) {
               className={`latest-showcase__card ${CARD_CLASSES[index]} ${
                 activeIndex === index ? "is-active" : ""
               }`}
-              onFocus={() => setActiveIndex(index)}
+              onPointerEnter={() => {
+                if (isMobile && index === 0) setActiveIndex(index);
+              }}
+              onPointerLeave={() => {
+                if (isMobile && index === 0) setActiveIndex(null);
+              }}
+              onFocus={() => {
+                if (!isMobile || index === 0) setActiveIndex(index);
+              }}
+              onBlur={() => setActiveIndex(null)}
             >
               <Image
                 src={item.src}

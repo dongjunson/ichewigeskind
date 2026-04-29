@@ -41,7 +41,11 @@ function GalleryCard({
   const createdDate = formatDriveDate(item.createdTime);
 
   return (
-    <button type="button" onClick={onClick} className="group w-full text-left">
+    <button
+      type="button"
+      onClick={onClick}
+      className="gallery-card group w-full text-left"
+    >
       <div className="relative aspect-square overflow-hidden bg-secondary">
         {/* 스켈레톤: 영역 세팅 시점부터 이미지 로드 전까지 항상 표시 */}
         <div
@@ -76,7 +80,7 @@ function GalleryCard({
           fill
           priority={priority}
           fetchPriority={priority ? "high" : "auto"}
-          className={`object-cover transition-all duration-500 ease-out group-hover:scale-105 ${
+          className={`gallery-card__image object-cover transition-all duration-500 ease-out group-hover:scale-105 ${
             imageLoaded ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
           sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
@@ -347,7 +351,7 @@ export function Gallery({
 
       {!loading && !error && (
         <>
-          <div className={`grid ${GRID_COLS} gap-0`}>
+          <div className={`gallery-grid grid ${GRID_COLS} gap-0`}>
             {items.map((item, index) => (
               <GalleryCard
                 key={item.id}
