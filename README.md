@@ -21,7 +21,7 @@
 
 - Google Drive 폴더 안의 이미지를 `createdTime desc` 순서로 불러와 갤러리에 표시한다.
 - 초기 페이지는 최근 30장을 서버에서 렌더링하고, 하단 `more` 버튼으로 다음 30장씩 추가 로딩한다.
-- 이미지는 Drive 원본 URL을 클라이언트에 직접 노출하지 않고 `/api/gallery/image?id={fileId}` 서버 프록시를 통해 제공한다.
+- 그리드 목록은 Google Drive `thumbnailLink`를 우선 사용하고, 라이트박스/공유 이미지는 `/api/gallery/image?id={fileId}` 서버 프록시로 원본을 제공한다.
 - 사진 클릭 시 `/photos/{googleDriveFileId}` 주소로 이동하며 라이트박스가 열린다.
 - `/photos/{id}` 주소로 직접 들어와도 해당 사진 메타데이터를 Drive에서 조회해 라이트박스를 연다.
 - 라이트박스에서 이전/다음 이동, ESC 닫기, 스와이프 이동, URL 복사를 지원한다.
@@ -202,6 +202,7 @@ Drive 목록 조회 조건:
 - `trashed=false`
 - `createdTime desc`
 - `pageSize=30`
+- 목록 응답에는 그리드용 `thumbnailLink`도 함께 포함한다.
 
 ### more 버튼
 
@@ -218,14 +219,19 @@ components/gallery.tsx
 ### 이미지 표시
 
 ```text
-<Image src="/api/gallery/image?id={fileId}" />
-또는 라이트박스 <img src="/api/gallery/image?id={fileId}" />
-  -> app/api/gallery/image/route.ts
-    -> Google Drive files.get alt=media
-    -> 이미지 바이트 스트림 반환
+그리드 카드
+  -> thumbnailSrc가 있으면 Google Drive thumbnailLink 사용
+  -> 없으면 /api/gallery/image?id={fileId}로 fallback
+
+라이트박스 / 공유 이미지
+  -> /api/gallery/image?id={fileId}
+    -> app/api/gallery/image/route.ts
+      -> Google Drive files.get alt=media
+      -> 이미지 바이트 스트림 반환
 ```
 
 이미지 API는 먼저 서비스 계정으로 시도하고, 서비스 계정 설정이 없으면 API Key 방식으로 시도한다.
+그리드 썸네일은 원본보다 작은 Drive 생성 이미지를 사용하므로 초기 목록 로딩과 스크롤 중 대역폭 부담을 줄인다.
 
 ### 사진 상세 URL
 
@@ -266,9 +272,10 @@ components/gallery.tsx
 | 초기 갤러리 목록 | `lib/gallery.ts` | `unstable_cache`, revalidate 60초 |
 | 개별 사진 메타데이터 | `lib/gallery.ts` | `unstable_cache`, revalidate 60초 |
 | Hero 랜덤 이미지 | `app/page.tsx`, `app/photos/[id]/page.tsx` | `unstable_cache`, revalidate 300초 |
-| 이미지 바이트 | `app/api/gallery/image/route.ts` | 브라우저 1일, CDN 7일, stale 1일 |
+| 그리드 썸네일 | Google Drive `thumbnailLink` | Drive가 생성한 작은 목록용 이미지 |
+| 원본 이미지 바이트 | `app/api/gallery/image/route.ts` | 브라우저 1일, CDN 7일, stale 1일 |
 
-그리드 썸네일과 라이트박스 이미지는 모두 `/api/gallery/image?id={fileId}` 경로를 사용한다. 그리드의 Next `<Image>`에는 `unoptimized`를 적용해 Next 이미지 최적화 URL과 원본 프록시 URL이 분리되지 않도록 했고, 이로 인해 사진을 열 때 같은 이미지가 깜빡이며 두 번 로드되는 현상을 줄인다.
+그리드는 `thumbnailSrc`를 우선 사용하고, 썸네일이 없는 파일만 `/api/gallery/image?id={fileId}`로 fallback한다. 라이트박스는 항상 원본 프록시를 사용한다. 그리드의 Next `<Image>`에는 `unoptimized`를 적용해 Drive 썸네일 또는 프록시 URL을 그대로 사용한다.
 
 이미지 응답 헤더:
 

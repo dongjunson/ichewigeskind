@@ -9,6 +9,7 @@ const GALLERY_REVALIDATE_SECONDS = 60;
 export interface GalleryImage {
   id: string;
   src: string;
+  thumbnailSrc?: string;
   alt: string;
   title: string;
   createdTime?: string;
@@ -19,6 +20,7 @@ interface DriveFile {
   name: string;
   mimeType?: string;
   createdTime?: string;
+  thumbnailLink?: string;
   parents?: string[];
 }
 
@@ -32,10 +34,15 @@ export interface GalleryPage {
   nextPageToken: string | null;
 }
 
+function getThumbnailSrc(thumbnailLink?: string) {
+  return thumbnailLink?.replace(/=s\d+$/, "=s640");
+}
+
 function toGalleryImage(file: DriveFile): GalleryImage {
   return {
     id: file.id,
     src: `/api/gallery/image?id=${encodeURIComponent(file.id)}`,
+    thumbnailSrc: getThumbnailSrc(file.thumbnailLink),
     alt: file.name.replace(/\.[^/.]+$/, ""),
     title: file.name.replace(/\.[^/.]+$/, ""),
     createdTime: file.createdTime,
@@ -72,7 +79,7 @@ async function fetchWithServiceAccount(
   const q = `'${folderId}' in parents and (${mimeQuery}) and trashed=false`;
   const res = await drive.files.list({
     q,
-    fields: "nextPageToken,files(id,name,mimeType,createdTime)",
+    fields: "nextPageToken,files(id,name,mimeType,createdTime,thumbnailLink)",
     orderBy: "createdTime desc",
     pageSize: DRIVE_PAGE_SIZE,
     pageToken,
@@ -106,7 +113,7 @@ async function fetchWithApiKey(
   const params = new URLSearchParams({
     q,
     key: apiKey,
-    fields: "nextPageToken,files(id,name,mimeType,createdTime)",
+    fields: "nextPageToken,files(id,name,mimeType,createdTime,thumbnailLink)",
     orderBy: "createdTime desc",
     pageSize: String(DRIVE_PAGE_SIZE),
     supportsAllDrives: "true",
@@ -199,7 +206,7 @@ async function fetchGalleryImageById(id: string): Promise<GalleryImage | null> {
     try {
       const res = await drive.files.get({
         fileId: id,
-        fields: "id,name,mimeType,createdTime,parents",
+        fields: "id,name,mimeType,createdTime,thumbnailLink,parents",
         supportsAllDrives: true,
       });
       file = res.data as DriveFile;
@@ -220,7 +227,7 @@ async function fetchGalleryImageById(id: string): Promise<GalleryImage | null> {
     }
     const params = new URLSearchParams({
       key: apiKey,
-      fields: "id,name,mimeType,createdTime,parents",
+      fields: "id,name,mimeType,createdTime,thumbnailLink,parents",
       supportsAllDrives: "true",
     });
     const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?${params}`, {
@@ -261,7 +268,7 @@ async function fetchGalleryImageById(id: string): Promise<GalleryImage | null> {
 
 export const getInitialGalleryPage = unstable_cache(
   () => fetchGalleryPage(),
-  ["gallery-images-initial-page-with-created-time-v2"],
+  ["gallery-images-initial-page-with-thumbnails-v3"],
   { revalidate: GALLERY_REVALIDATE_SECONDS }
 );
 

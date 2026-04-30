@@ -1,5 +1,6 @@
 "use client";
 
+import gsap from "gsap";
 import { Check, ChevronLeft, ChevronRight, Copy, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
@@ -7,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 interface GalleryItem {
   id: string;
   src: string;
+  thumbnailSrc?: string;
   alt: string;
   title: string;
   createdTime?: string;
@@ -23,6 +25,7 @@ const LOADING_PLACEHOLDERS = Array.from(
   { length: 12 },
   (_, index) => `loading-placeholder-${index}`
 );
+const LOADING_DOTS = [0, 1, 2];
 
 function mergeGalleryItems(prev: GalleryItem[], incoming: GalleryItem[]) {
   if (incoming.length === 0) return prev;
@@ -51,6 +54,52 @@ function getPhotoIdFromPath(pathname: string) {
   return id ? decodeURIComponent(id) : null;
 }
 
+function LoadingDots({ variant = "dark" }: { variant?: "dark" | "light" }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dotClassName =
+    variant === "light" ? "bg-white/55 shadow-[0_0_10px_rgba(255,255,255,0.18)]" : "bg-primary/45";
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      gsap
+        .timeline({ repeat: -1 })
+        .to(".loading-dot", {
+          y: -3,
+          opacity: 1,
+          duration: 0.45,
+          ease: "sine.inOut",
+          stagger: 0.12,
+        })
+        .to(
+          ".loading-dot",
+          {
+            y: 0,
+            opacity: 0.45,
+            duration: 0.45,
+            ease: "sine.inOut",
+            stagger: 0.12,
+          },
+          0.45
+        );
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="relative z-10 flex items-center justify-center gap-1.5">
+      {LOADING_DOTS.map((dot) => (
+        <span
+          key={dot}
+          className={`loading-dot h-1.5 w-1.5 rounded-full opacity-45 ${dotClassName}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function GalleryCard({
   item,
   onClick,
@@ -61,54 +110,89 @@ function GalleryCard({
   priority?: boolean;
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageSrc, setImageSrc] = useState(item.thumbnailSrc ?? item.src ?? "/placeholder.svg");
+  const [hoverEnabled, setHoverEnabled] = useState(false);
+  const cardRef = useRef<HTMLButtonElement | null>(null);
   const createdDate = formatDriveDate(item.createdTime);
+  const fallbackSrc = item.src ?? "/placeholder.svg";
+
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setHoverEnabled(entry.isIntersecting);
+      },
+      {
+        rootMargin: "240px 0px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
+
+  const markImageLoaded = () => setImageLoaded(true);
+
+  const syncImageElement = (node: HTMLImageElement | null) => {
+    if (!node?.complete) return;
+    if (node.naturalWidth > 0) {
+      markImageLoaded();
+    } else if (imageSrc !== fallbackSrc) {
+      setImageSrc(fallbackSrc);
+    } else {
+      markImageLoaded();
+    }
+  };
+
+  const handleImageError = () => {
+    if (imageSrc !== fallbackSrc) {
+      setImageLoaded(false);
+      setImageSrc(fallbackSrc);
+      return;
+    }
+    markImageLoaded();
+  };
 
   return (
     <button
+      ref={cardRef}
       type="button"
       onClick={onClick}
-      className="gallery-card group w-full text-left"
+      className={`gallery-card w-full text-left ${hoverEnabled ? "group is-hover-enabled" : ""}`}
+      style={{
+        containIntrinsicSize: "240px",
+        contentVisibility: "auto",
+      }}
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        {/* 스켈레톤: 영역 세팅 시점부터 이미지 로드 전까지 항상 표시 */}
         <div
-          className={`absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 transition-opacity duration-300 ${
+          className={`absolute inset-0 z-20 flex items-center justify-center bg-secondary transition-opacity duration-300 ${
             imageLoaded ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
-          <div className="absolute inset-0 bg-accent animate-pulse" />
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div
-              className="absolute inset-0 -translate-x-full animate-shimmer"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)",
-                width: "50%",
-              }}
-            />
-          </div>
-          <div className="relative z-10 flex gap-1">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse"
-                style={{ animationDelay: `${i * 150}ms` }}
-              />
-            ))}
-          </div>
+          <LoadingDots />
         </div>
         <Image
-          src={item.src || "/placeholder.svg"}
+          ref={syncImageElement}
+          src={imageSrc}
           alt={item.alt}
           fill
           unoptimized
           priority={priority}
           fetchPriority={priority ? "high" : "auto"}
-          className={`gallery-card__image object-cover transition-all duration-500 ease-out group-hover:scale-105 ${
+          className={`gallery-card__image object-cover ${
+            hoverEnabled
+              ? "duration-[4000ms] ease-[cubic-bezier(0.22,1,0.36,1)] transition-[opacity,transform,filter] group-hover:scale-105"
+              : "duration-500 ease-out transition-opacity"
+          } ${
             imageLoaded ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
           sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
-          onLoad={() => setImageLoaded(true)}
+          onLoad={markImageLoaded}
+          onError={handleImageError}
         />
         {createdDate && (
           <span className="pointer-events-none absolute right-2 bottom-2 z-30 inline-flex h-5 min-w-[4.5rem] items-center justify-center rounded-sm border border-white/25 bg-black/75 px-1.5 font-date text-[10px] font-medium leading-none text-white shadow-sm backdrop-blur-sm">
@@ -296,16 +380,8 @@ function ImageViewer({
 
       <div className="relative z-[50] flex max-h-[90vh] max-w-[90vw] items-center justify-center min-h-[200px]">
         {imageLoading && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2">
-            <div className="flex gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="h-1.5 w-1.5 rounded-full bg-white/50 animate-pulse"
-                  style={{ animationDelay: `${i * 150}ms` }}
-                />
-              ))}
-            </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <LoadingDots variant="light" />
           </div>
         )}
         {imageError && (
@@ -462,32 +538,12 @@ export function Gallery({
     <section id="work" className="w-full pb-16 sm:pb-24">
       {loading && (
         <div className={`grid ${GRID_COLS} gap-0`}>
-          {LOADING_PLACEHOLDERS.map((placeholder, i) => (
+          {LOADING_PLACEHOLDERS.map((placeholder) => (
             <div
               key={placeholder}
               className="relative aspect-square overflow-hidden bg-secondary flex items-center justify-center"
             >
-              <div className="absolute inset-0 bg-accent animate-pulse" />
-              <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div
-                  className="absolute inset-0 -translate-x-full animate-shimmer"
-                  style={{
-                    animationDelay: `${i * 0.12}s`,
-                    background:
-                      "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.2) 50%, transparent 100%)",
-                    width: "50%",
-                  }}
-                />
-              </div>
-              <div className="relative z-10 flex gap-1">
-                {[0, 1, 2].map((j) => (
-                  <div
-                    key={j}
-                    className="h-1.5 w-1.5 rounded-full bg-primary/60 animate-pulse"
-                    style={{ animationDelay: `${j * 150}ms` }}
-                  />
-                ))}
-              </div>
+              <LoadingDots />
             </div>
           ))}
         </div>

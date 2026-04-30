@@ -161,6 +161,7 @@ export async function GET(request: NextRequest) {
     const images = page.files.map((file) => ({
       id: file.id,
       src: `/api/gallery/image?id=${encodeURIComponent(file.id)}`,
+      thumbnailSrc: file.thumbnailLink?.replace(/=s\d+$/, "=s640"),
       alt: file.name.replace(/\.[^/.]+$/, ""),
       title: file.name.replace(/\.[^/.]+$/, ""),
       createdTime: file.createdTime,
