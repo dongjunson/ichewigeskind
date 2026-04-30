@@ -25,7 +25,7 @@
 - 사진 클릭 시 `/photos/{googleDriveFileId}` 주소로 이동하며 라이트박스가 열린다.
 - `/photos/{id}` 주소로 직접 들어와도 해당 사진 메타데이터를 Drive에서 조회해 라이트박스를 연다.
 - 라이트박스에서 이전/다음 이동, ESC 닫기, 스와이프 이동, URL 복사를 지원한다.
-- 사진 상세 URL을 메신저나 SNS에 붙여 넣으면 전용 PNG Open Graph 이미지가 미리보기로 설정된다.
+- 사진 상세 URL을 메신저나 SNS에 붙여 넣으면 전용 Open Graph 이미지 URL이 미리보기로 설정된다.
 - Drive API 호출량을 `/api/drive-usage`에서 확인할 수 있다.
 
 ---
@@ -253,7 +253,7 @@ components/gallery.tsx
 - `twitter:card`
 - `twitter:image`
 
-`og:image`와 `twitter:image`는 `/photos/{fileId}/opengraph-image`의 절대 URL을 사용한다. 이 라우트는 Drive 이미지를 1200x630 PNG 미리보기로 렌더링하므로, 공유 URL을 메신저, Slack, KakaoTalk, X 등에 붙여 넣으면 해당 사진이 안정적인 미리보기 이미지로 사용된다. 공유 타이틀은 개별 파일명이 아니라 사이트 기본 타이틀인 `ichewigeskind — Film Photography Journal`로 고정한다.
+`og:image`와 `twitter:image`는 `/photos/{fileId}/opengraph-image`의 절대 URL을 사용한다. 이 라우트는 Drive 이미지 바이트를 바로 프록시하므로, 공유 URL을 메신저, Slack, KakaoTalk, X 등에 붙여 넣으면 해당 사진이 안정적인 미리보기 이미지로 사용된다. 공유 타이틀은 개별 파일명이 아니라 사이트 기본 타이틀인 `ichewigeskind — Film Photography Journal`로 고정한다.
 
 ---
 

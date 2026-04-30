@@ -61,7 +61,6 @@ export async function generateMetadata({ params }: PhotoPageProps): Promise<Meta
           alt: "ichewigeskind photo",
           width: 1200,
           height: 630,
-          type: "image/png",
         },
       ],
     },
