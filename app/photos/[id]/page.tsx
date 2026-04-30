@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { Gallery } from "@/components/gallery";
@@ -8,6 +9,27 @@ import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
+type PhotoPageProps = {
+  params: Promise<{ id: string }>;
+};
+
+function getSiteUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL;
+  const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  const url = configuredUrl ?? (vercelUrl ? `https://${vercelUrl}` : "http://localhost:3000");
+
+  return new URL(url.startsWith("http") ? url : `https://${url}`);
+}
+
+function getPhotoPath(id: string) {
+  return `/photos/${encodeURIComponent(id)}`;
+}
+
+function getPhotoImageUrl(id: string) {
+  const params = new URLSearchParams({ id });
+  return `/api/gallery/image?${params.toString()}`;
+}
+
 const getCachedHeroSrc = unstable_cache(
   async () => {
     const { images } = await getInitialGalleryPage();
@@ -17,11 +39,48 @@ const getCachedHeroSrc = unstable_cache(
   { revalidate: 300 }
 );
 
-export default async function PhotoPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export async function generateMetadata({ params }: PhotoPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const image = await getGalleryImageById(id);
+  const siteUrl = getSiteUrl();
+  const pageUrl = new URL(getPhotoPath(id), siteUrl);
+  const imageUrl = new URL(getPhotoImageUrl(id), siteUrl);
+  const title = image?.title ? `${image.title} — ichewigeskind` : "ichewigeskind";
+  const description =
+    image?.createdTime?.slice(0, 10) ?? "A quiet journal dedicated to analog photography.";
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      type: "article",
+      siteName: "ichewigeskind",
+      images: [
+        {
+          url: imageUrl,
+          alt: image?.alt ?? "ichewigeskind photo",
+          width: 1200,
+          height: 630,
+          type: "image/jpeg",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [imageUrl],
+    },
+  };
+}
+
+export default async function PhotoPage({ params }: PhotoPageProps) {
   const { id } = await params;
   const [{ images, nextPageToken }, selectedImage, heroSrc] = await Promise.all([
     getInitialGalleryPage(),
