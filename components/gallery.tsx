@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, X } from "lucide-react";
 import Image from "next/image";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 interface GalleryItem {
@@ -24,8 +25,25 @@ const LOADING_PLACEHOLDERS = Array.from(
   (_, index) => `loading-placeholder-${index}`
 );
 
+function mergeGalleryItems(prev: GalleryItem[], incoming: GalleryItem[]) {
+  if (incoming.length === 0) return prev;
+  const existingIds = new Set(prev.map((item) => item.id));
+  const filtered = incoming.filter((item) => !existingIds.has(item.id));
+  return filtered.length > 0 ? [...prev, ...filtered] : prev;
+}
+
+function getInitialViewerIndex(items: GalleryItem[], selectedImageId?: string | null) {
+  if (!selectedImageId) return null;
+  const index = items.findIndex((item) => item.id === selectedImageId);
+  return index === -1 ? null : index;
+}
+
 function formatDriveDate(createdTime?: string) {
   return createdTime?.slice(0, 10) ?? null;
+}
+
+function getPhotoPath(id: string) {
+  return `/photos/${encodeURIComponent(id)}`;
 }
 
 function GalleryCard({
@@ -110,6 +128,9 @@ function ImageViewer({
   onNext: () => void;
 }) {
   const [loadedImageId, setLoadedImageId] = useState<string | null>(null);
+  const [failedImageId, setFailedImageId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const item = items[currentIndex];
 
@@ -128,9 +149,53 @@ function ImageViewer({
     };
   }, [item, onClose, onPrev, onNext]);
 
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = window.setTimeout(() => setCopied(false), 1600);
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
+
   if (!item) return null;
-  const imageLoading = loadedImageId !== item.id;
+  const imageError = failedImageId === item.id;
+  const imageLoading = loadedImageId !== item.id && !imageError;
   const hasMultipleItems = items.length > 1;
+
+  const markImageLoaded = () => {
+    setFailedImageId(null);
+    setLoadedImageId(item.id);
+  };
+
+  const markImageFailed = () => {
+    setFailedImageId(item.id);
+  };
+
+  const syncImageElement = (node: HTMLImageElement | null) => {
+    imageRef.current = node;
+    if (!node?.complete) return;
+
+    if (node.naturalWidth > 0) {
+      markImageLoaded();
+    } else {
+      markImageFailed();
+    }
+  };
+
+  const copyUrl = async () => {
+    const url = `${window.location.origin}${getPhotoPath(item.id)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = url;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+    }
+    setCopied(true);
+  };
 
   const handleTouchEnd = (x: number, y: number) => {
     const start = touchStartRef.current;
@@ -171,17 +236,30 @@ function ImageViewer({
         handleTouchEnd(touch.clientX, touch.clientY);
       }}
     >
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
-        className="absolute right-4 top-4 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/80 shadow-lg backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-        aria-label="Close"
-      >
-        <X className="h-6 w-6" />
-      </button>
+      <div className="absolute right-4 top-4 z-[60] flex items-center gap-2">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            copyUrl();
+          }}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/80 shadow-lg backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          aria-label={copied ? "Copied URL" : "Copy URL"}
+        >
+          {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white/80 shadow-lg backdrop-blur-md transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+          aria-label="Close"
+        >
+          <X className="h-6 w-6" />
+        </button>
+      </div>
 
       {hasMultipleItems && (
         <>
@@ -224,14 +302,22 @@ function ImageViewer({
             </div>
           </div>
         )}
+        {imageError && (
+          <div className="max-w-[70vw] rounded-md border border-white/15 bg-black/45 px-4 py-3 text-center text-sm text-white/75 shadow-lg backdrop-blur-md">
+            Image could not be loaded.
+          </div>
+        )}
         {/* biome-ignore lint/performance/noImgElement: Drive proxy images need natural lightbox sizing. */}
         <img
+          ref={syncImageElement}
+          key={item.id}
           src={`/api/gallery/image?id=${encodeURIComponent(item.id)}`}
           alt={item.alt}
           className={`max-h-[90vh] max-w-full w-auto object-contain transition-all duration-500 ease-out ${
-            imageLoading ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
+            imageLoading || imageError ? "opacity-0 scale-[0.98]" : "opacity-100 scale-100"
           }`}
-          onLoad={() => setLoadedImageId(item.id)}
+          onLoad={markImageLoaded}
+          onError={markImageFailed}
         />
       </div>
     </div>
@@ -241,24 +327,27 @@ function ImageViewer({
 export function Gallery({
   initialItems = [],
   initialNextPageToken = null,
+  initialSelectedImage = null,
 }: {
   initialItems?: GalleryItem[];
   initialNextPageToken?: string | null;
+  initialSelectedImage?: GalleryItem | null;
 }) {
-  const [items, setItems] = useState<GalleryItem[]>(initialItems);
+  const router = useRouter();
+  const pathname = usePathname();
+  const selectedImageId = initialSelectedImage?.id ?? null;
+  const seededItems = initialSelectedImage
+    ? mergeGalleryItems(initialItems, [initialSelectedImage])
+    : initialItems;
+  const [items, setItems] = useState<GalleryItem[]>(seededItems);
   const [loading, setLoading] = useState(initialItems.length === 0);
   const [error, setError] = useState<string | null>(null);
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(
+    getInitialViewerIndex(seededItems, selectedImageId)
+  );
   const [nextPageToken, setNextPageToken] = useState<string | null>(initialNextPageToken);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
-
-  const mergeItems = (prev: GalleryItem[], incoming: GalleryItem[]) => {
-    if (incoming.length === 0) return prev;
-    const existingIds = new Set(prev.map((item) => item.id));
-    const filtered = incoming.filter((item) => !existingIds.has(item.id));
-    return filtered.length > 0 ? [...prev, ...filtered] : prev;
-  };
 
   useEffect(() => {
     if (initialItems.length > 0) return;
@@ -279,6 +368,17 @@ export function Gallery({
       .finally(() => setLoading(false));
   }, [initialItems.length]);
 
+  useEffect(() => {
+    if (!initialSelectedImage) return;
+    setItems((prev) => mergeGalleryItems(prev, [initialSelectedImage]));
+  }, [initialSelectedImage]);
+
+  useEffect(() => {
+    if (!selectedImageId) return;
+    const index = items.findIndex((item) => item.id === selectedImageId);
+    if (index !== -1) setViewerIndex(index);
+  }, [items, selectedImageId]);
+
   const loadMore = async () => {
     if (!nextPageToken || loadingMore) return;
 
@@ -293,7 +393,7 @@ export function Gallery({
         throw new Error(data.error ?? "Failed to load more");
       }
 
-      setItems((prev) => mergeItems(prev, data.images ?? []));
+      setItems((prev) => mergeGalleryItems(prev, data.images ?? []));
       setNextPageToken(data.nextPageToken ?? null);
     } catch (e) {
       setLoadMoreError(e instanceof Error ? e.message : "Failed to load more");
@@ -302,11 +402,38 @@ export function Gallery({
     }
   };
 
-  const openViewer = (index: number) => setViewerIndex(index);
-  const closeViewer = () => setViewerIndex(null);
+  const openViewer = (index: number) => {
+    const item = items[index];
+    if (!item) return;
+    setViewerIndex(index);
+    router.push(getPhotoPath(item.id), { scroll: false });
+  };
+  const closeViewer = () => {
+    setViewerIndex(null);
+    if (pathname.startsWith("/photos/")) {
+      router.push("/#work", { scroll: false });
+    }
+  };
   const goPrev = () =>
-    setViewerIndex((i) => (i === null ? null : (i - 1 + items.length) % items.length));
-  const goNext = () => setViewerIndex((i) => (i === null ? null : (i + 1) % items.length));
+    setViewerIndex((i) => {
+      if (i === null) return null;
+      const nextIndex = (i - 1 + items.length) % items.length;
+      const item = items[nextIndex];
+      if (item) {
+        router.replace(getPhotoPath(item.id), { scroll: false });
+      }
+      return nextIndex;
+    });
+  const goNext = () =>
+    setViewerIndex((i) => {
+      if (i === null) return null;
+      const nextIndex = (i + 1) % items.length;
+      const item = items[nextIndex];
+      if (item) {
+        router.replace(getPhotoPath(item.id), { scroll: false });
+      }
+      return nextIndex;
+    });
 
   return (
     <section id="work" className="w-full pb-16 sm:pb-24">

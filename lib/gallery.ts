@@ -19,6 +19,7 @@ interface DriveFile {
   name: string;
   mimeType?: string;
   createdTime?: string;
+  parents?: string[];
 }
 
 interface DriveListPage {
@@ -39,6 +40,13 @@ function toGalleryImage(file: DriveFile): GalleryImage {
     title: file.name.replace(/\.[^/.]+$/, ""),
     createdTime: file.createdTime,
   };
+}
+
+function getErrorStatus(error: unknown) {
+  if (typeof error !== "object" || error === null) return null;
+  if ("code" in error && typeof error.code === "number") return error.code;
+  if ("status" in error && typeof error.status === "number") return error.status;
+  return null;
 }
 
 async function fetchWithServiceAccount(
@@ -161,6 +169,96 @@ async function fetchGalleryPage(pageToken?: string): Promise<GalleryPage> {
   };
 }
 
+async function fetchGalleryImageById(id: string): Promise<GalleryImage | null> {
+  const apiKey = process.env.GOOGLE_DRIVE_API_KEY;
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const resourceKey = process.env.GOOGLE_DRIVE_RESOURCE_KEY;
+  const useServiceAccount = !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+  if (!folderId) return null;
+  if (!useServiceAccount && !apiKey) return null;
+
+  let file: DriveFile | null = null;
+
+  if (useServiceAccount) {
+    const credentialsJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+    if (!credentialsJson) return null;
+
+    let credentials: object;
+    try {
+      credentials = JSON.parse(credentialsJson) as object;
+    } catch {
+      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is invalid JSON");
+    }
+
+    const auth = new google.auth.GoogleAuth({
+      credentials,
+      scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    });
+    const drive = google.drive({ version: "v3", auth });
+    try {
+      const res = await drive.files.get({
+        fileId: id,
+        fields: "id,name,mimeType,createdTime,parents",
+        supportsAllDrives: true,
+      });
+      file = res.data as DriveFile;
+    } catch (error) {
+      if (getErrorStatus(error) === 404) {
+        console.info("Gallery image lookup not found:", { id });
+        return null;
+      }
+      throw error;
+    }
+    recordDriveUsage("files.get", { source: "lib/gallery-metadata", fileId: id });
+  } else {
+    if (!apiKey) return null;
+
+    const headers: HeadersInit = {};
+    if (resourceKey) {
+      headers["X-Goog-Drive-Resource-Keys"] = `${id}/${resourceKey}`;
+    }
+    const params = new URLSearchParams({
+      key: apiKey,
+      fields: "id,name,mimeType,createdTime,parents",
+      supportsAllDrives: "true",
+    });
+    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?${params}`, {
+      headers,
+      next: { revalidate: GALLERY_REVALIDATE_SECONDS },
+    });
+
+    if (res.status === 404) {
+      console.info("Gallery image lookup not found:", { id });
+      return null;
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Drive API ${res.status}: ${text}`);
+    }
+    file = (await res.json()) as DriveFile;
+    recordDriveUsage("files.get", { source: "lib/gallery-apiKey-metadata", fileId: id });
+  }
+
+  if (!file?.id || !file.name) {
+    console.info("Gallery image lookup missing metadata:", { id });
+    return null;
+  }
+  if (!file.mimeType || !SUPPORTED_IMAGE_TYPES.includes(file.mimeType)) {
+    console.info("Gallery image lookup rejected unsupported type:", {
+      id,
+      mimeType: file.mimeType,
+    });
+    return null;
+  }
+  if (file.parents && !file.parents.includes(folderId)) {
+    console.info("Gallery image lookup rejected outside folder:", { id });
+    return null;
+  }
+
+  return toGalleryImage(file);
+}
+
 export const getInitialGalleryPage = unstable_cache(
   () => fetchGalleryPage(),
   ["gallery-images-initial-page-with-created-time-v2"],
@@ -171,3 +269,9 @@ export async function getGalleryImages(): Promise<GalleryImage[]> {
   const { images } = await getInitialGalleryPage();
   return images;
 }
+
+export const getGalleryImageById = unstable_cache(
+  (id: string) => fetchGalleryImageById(id),
+  ["gallery-image-by-id-v1"],
+  { revalidate: GALLERY_REVALIDATE_SECONDS }
+);

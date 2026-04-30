@@ -1,4 +1,10 @@
 {
   "installCommand": "npm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/photos/:id",
+      "destination": "/photos/:id"
+    }
+  ]
 }
