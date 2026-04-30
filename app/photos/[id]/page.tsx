@@ -25,11 +25,6 @@ function getPhotoPath(id: string) {
   return `/photos/${encodeURIComponent(id)}`;
 }
 
-function getPhotoImageUrl(id: string) {
-  const params = new URLSearchParams({ id });
-  return `/api/gallery/image?${params.toString()}`;
-}
-
 const getCachedHeroSrc = unstable_cache(
   async () => {
     const { images } = await getInitialGalleryPage();
@@ -41,13 +36,12 @@ const getCachedHeroSrc = unstable_cache(
 
 export async function generateMetadata({ params }: PhotoPageProps): Promise<Metadata> {
   const { id } = await params;
-  const image = await getGalleryImageById(id);
   const siteUrl = getSiteUrl();
   const pageUrl = new URL(getPhotoPath(id), siteUrl);
-  const imageUrl = new URL(getPhotoImageUrl(id), siteUrl);
-  const title = image?.title ? `${image.title} — ichewigeskind` : "ichewigeskind";
+  const imageUrl = new URL(`${getPhotoPath(id)}/opengraph-image`, siteUrl);
+  const title = "ichewigeskind — Film Photography Journal";
   const description =
-    image?.createdTime?.slice(0, 10) ?? "A quiet journal dedicated to analog photography.";
+    "A quiet journal dedicated to the art of analog photography. Stories told through grain, light, and patience.";
 
   return {
     title,
@@ -64,10 +58,10 @@ export async function generateMetadata({ params }: PhotoPageProps): Promise<Meta
       images: [
         {
           url: imageUrl,
-          alt: image?.alt ?? "ichewigeskind photo",
+          alt: "ichewigeskind photo",
           width: 1200,
           height: 630,
-          type: "image/jpeg",
+          type: "image/png",
         },
       ],
     },
