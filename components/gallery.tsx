@@ -379,6 +379,7 @@ export function Gallery({
 
   useEffect(() => {
     if (!selectedImageId) return;
+    if (getPhotoIdFromPath(window.location.pathname) !== selectedImageId) return;
     const index = items.findIndex((item) => item.id === selectedImageId);
     if (index !== -1) setViewerIndex(index);
   }, [items, selectedImageId]);
@@ -433,7 +434,7 @@ export function Gallery({
   const closeViewer = () => {
     setViewerIndex(null);
     if (window.location.pathname.startsWith("/photos/")) {
-      window.history.pushState(null, "", "/#work");
+      window.history.replaceState(null, "", "/#work");
     }
   };
   const goPrev = () =>
