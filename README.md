@@ -240,6 +240,8 @@ components/gallery.tsx
 
 따라서 홈에서 아직 `more`로 불러오지 않은 사진도, Drive file ID만 맞으면 `/photos/{id}` 직접 접근으로 열 수 있다.
 
+홈 갤러리에서 사진을 클릭할 때는 Next 라우터로 페이지를 다시 이동하지 않고 `window.history.pushState`로 주소만 `/photos/{fileId}`로 바꾼다. 덕분에 `more`로 불러온 클라이언트 목록 상태가 유지되고, 라이트박스를 닫아도 이미 추가 로딩한 사진들이 초기화되지 않는다. 이전/다음 사진 이동은 `replaceState`로 현재 URL만 갱신하며, 브라우저 뒤로/앞으로 가기는 `popstate`로 라이트박스 상태와 동기화한다.
+
 ### 공유 미리보기 메타데이터
 
 `/photos/{id}`는 `generateMetadata()`에서 해당 파일의 Drive 메타데이터를 조회하고 아래 메타 태그를 생성한다.
@@ -265,6 +267,8 @@ components/gallery.tsx
 | 개별 사진 메타데이터 | `lib/gallery.ts` | `unstable_cache`, revalidate 60초 |
 | Hero 랜덤 이미지 | `app/page.tsx`, `app/photos/[id]/page.tsx` | `unstable_cache`, revalidate 300초 |
 | 이미지 바이트 | `app/api/gallery/image/route.ts` | 브라우저 1일, CDN 7일, stale 1일 |
+
+그리드 썸네일과 라이트박스 이미지는 모두 `/api/gallery/image?id={fileId}` 경로를 사용한다. 그리드의 Next `<Image>`에는 `unoptimized`를 적용해 Next 이미지 최적화 URL과 원본 프록시 URL이 분리되지 않도록 했고, 이로 인해 사진을 열 때 같은 이미지가 깜빡이며 두 번 로드되는 현상을 줄인다.
 
 이미지 응답 헤더:
 

@@ -2,7 +2,6 @@
 
 import { Check, ChevronLeft, ChevronRight, Copy, X } from "lucide-react";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 interface GalleryItem {
@@ -44,6 +43,12 @@ function formatDriveDate(createdTime?: string) {
 
 function getPhotoPath(id: string) {
   return `/photos/${encodeURIComponent(id)}`;
+}
+
+function getPhotoIdFromPath(pathname: string) {
+  if (!pathname.startsWith("/photos/")) return null;
+  const [, , id] = pathname.split("/");
+  return id ? decodeURIComponent(id) : null;
 }
 
 function GalleryCard({
@@ -96,6 +101,7 @@ function GalleryCard({
           src={item.src || "/placeholder.svg"}
           alt={item.alt}
           fill
+          unoptimized
           priority={priority}
           fetchPriority={priority ? "high" : "auto"}
           className={`gallery-card__image object-cover transition-all duration-500 ease-out group-hover:scale-105 ${
@@ -333,8 +339,6 @@ export function Gallery({
   initialNextPageToken?: string | null;
   initialSelectedImage?: GalleryItem | null;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
   const selectedImageId = initialSelectedImage?.id ?? null;
   const seededItems = initialSelectedImage
     ? mergeGalleryItems(initialItems, [initialSelectedImage])
@@ -379,6 +383,24 @@ export function Gallery({
     if (index !== -1) setViewerIndex(index);
   }, [items, selectedImageId]);
 
+  useEffect(() => {
+    const syncViewerWithLocation = () => {
+      const photoId = getPhotoIdFromPath(window.location.pathname);
+      if (!photoId) {
+        setViewerIndex(null);
+        return;
+      }
+
+      const index = items.findIndex((item) => item.id === photoId);
+      if (index !== -1) {
+        setViewerIndex(index);
+      }
+    };
+
+    window.addEventListener("popstate", syncViewerWithLocation);
+    return () => window.removeEventListener("popstate", syncViewerWithLocation);
+  }, [items]);
+
   const loadMore = async () => {
     if (!nextPageToken || loadingMore) return;
 
@@ -406,12 +428,12 @@ export function Gallery({
     const item = items[index];
     if (!item) return;
     setViewerIndex(index);
-    router.push(getPhotoPath(item.id), { scroll: false });
+    window.history.pushState({ photoId: item.id }, "", getPhotoPath(item.id));
   };
   const closeViewer = () => {
     setViewerIndex(null);
-    if (pathname.startsWith("/photos/")) {
-      router.push("/#work", { scroll: false });
+    if (window.location.pathname.startsWith("/photos/")) {
+      window.history.pushState(null, "", "/#work");
     }
   };
   const goPrev = () =>
@@ -420,7 +442,7 @@ export function Gallery({
       const nextIndex = (i - 1 + items.length) % items.length;
       const item = items[nextIndex];
       if (item) {
-        router.replace(getPhotoPath(item.id), { scroll: false });
+        window.history.replaceState({ photoId: item.id }, "", getPhotoPath(item.id));
       }
       return nextIndex;
     });
@@ -430,7 +452,7 @@ export function Gallery({
       const nextIndex = (i + 1) % items.length;
       const item = items[nextIndex];
       if (item) {
-        router.replace(getPhotoPath(item.id), { scroll: false });
+        window.history.replaceState({ photoId: item.id }, "", getPhotoPath(item.id));
       }
       return nextIndex;
     });
