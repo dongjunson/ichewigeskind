@@ -82,26 +82,6 @@ html {
 }
 
 @layer components {
-  .gallery-grid:has(.gallery-card.is-hover-enabled:hover)
-    .gallery-card.is-hover-enabled
-    .gallery-card__image,
-  .gallery-grid:has(.gallery-card.is-hover-enabled:focus-visible)
-    .gallery-card.is-hover-enabled
-    .gallery-card__image {
-    filter: grayscale(1) brightness(0.72);
-  }
-
-  .gallery-grid:has(.gallery-card.is-hover-enabled:hover)
-    .gallery-card.is-hover-enabled:hover
-    .gallery-card__image,
-  .gallery-grid:has(.gallery-card.is-hover-enabled:focus-visible)
-    .gallery-card.is-hover-enabled:focus-visible
-    .gallery-card__image {
-    filter: grayscale(0) brightness(1);
-    transition-duration: 650ms;
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
   .latest-showcase {
     position: relative;
     z-index: 20;

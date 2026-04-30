@@ -26,6 +26,7 @@ const LOADING_PLACEHOLDERS = Array.from(
   (_, index) => `loading-placeholder-${index}`
 );
 const LOADING_DOTS = [0, 1, 2];
+const HOVER_EFFECT_RANGE = 31;
 
 function mergeGalleryItems(prev: GalleryItem[], incoming: GalleryItem[]) {
   if (incoming.length === 0) return prev;
@@ -103,10 +104,18 @@ function LoadingDots({ variant = "dark" }: { variant?: "dark" | "light" }) {
 function GalleryCard({
   item,
   onClick,
+  onHoverEnd,
+  onHoverStart,
+  isDimmed = false,
+  isHovered = false,
   priority = false,
 }: {
   item: GalleryItem;
   onClick: () => void;
+  onHoverEnd: () => void;
+  onHoverStart: () => void;
+  isDimmed?: boolean;
+  isHovered?: boolean;
   priority?: boolean;
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -125,7 +134,7 @@ function GalleryCard({
         setHoverEnabled(entry.isIntersecting);
       },
       {
-        rootMargin: "240px 0px",
+        rootMargin: "900px 0px",
         threshold: 0,
       }
     );
@@ -156,16 +165,23 @@ function GalleryCard({
     markImageLoaded();
   };
 
+  const imageTransitionClass = hoverEnabled
+    ? isHovered
+      ? "duration-[650ms] ease-[cubic-bezier(0.16,1,0.3,1)] transition-[opacity,transform,filter] group-hover:scale-105"
+      : "duration-[4000ms] ease-[cubic-bezier(0.22,1,0.36,1)] transition-[opacity,filter]"
+    : "duration-500 ease-out transition-opacity";
+  const imageFilterClass = isDimmed ? "grayscale brightness-[0.72]" : "grayscale-0 brightness-100";
+
   return (
     <button
       ref={cardRef}
       type="button"
       onClick={onClick}
+      onBlur={onHoverEnd}
+      onFocus={onHoverStart}
+      onPointerEnter={onHoverStart}
+      onPointerLeave={onHoverEnd}
       className={`gallery-card w-full text-left ${hoverEnabled ? "group is-hover-enabled" : ""}`}
-      style={{
-        containIntrinsicSize: "240px",
-        contentVisibility: "auto",
-      }}
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
         <div
@@ -183,11 +199,7 @@ function GalleryCard({
           unoptimized
           priority={priority}
           fetchPriority={priority ? "high" : "auto"}
-          className={`gallery-card__image object-cover ${
-            hoverEnabled
-              ? "duration-[4000ms] ease-[cubic-bezier(0.22,1,0.36,1)] transition-[opacity,transform,filter] group-hover:scale-105"
-              : "duration-500 ease-out transition-opacity"
-          } ${
+          className={`gallery-card__image object-cover ${imageTransitionClass} ${imageFilterClass} ${
             imageLoaded ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
           sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 16vw"
@@ -428,6 +440,7 @@ export function Gallery({
   const [nextPageToken, setNextPageToken] = useState<string | null>(initialNextPageToken);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (initialItems.length > 0) return;
@@ -562,7 +575,15 @@ export function Gallery({
               <GalleryCard
                 key={item.id}
                 item={item}
+                isDimmed={
+                  hoveredIndex !== null &&
+                  hoveredIndex !== index &&
+                  Math.abs(hoveredIndex - index) <= HOVER_EFFECT_RANGE
+                }
+                isHovered={hoveredIndex === index}
                 onClick={() => openViewer(index)}
+                onHoverEnd={() => setHoveredIndex((current) => (current === index ? null : current))}
+                onHoverStart={() => setHoveredIndex(index)}
                 priority={index < 6}
               />
             ))}
