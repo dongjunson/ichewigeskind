@@ -253,7 +253,7 @@ components/gallery.tsx
 - `twitter:card`
 - `twitter:image`
 
-`og:image`와 `twitter:image`는 `/photos/{fileId}/opengraph-image`의 절대 URL을 사용한다. 이 라우트는 Drive 이미지 바이트를 바로 프록시하므로, 공유 URL을 메신저, Slack, KakaoTalk, X 등에 붙여 넣으면 해당 사진이 안정적인 미리보기 이미지로 사용된다. 공유 타이틀은 개별 파일명이 아니라 사이트 기본 타이틀인 `ichewigeskind — Film Photography Journal`로 고정한다.
+`og:image`와 `twitter:image`는 `/photos/{fileId}/opengraph-image?v=2`의 절대 URL을 사용한다. 이 라우트는 Drive 이미지 바이트를 바로 프록시하므로, 공유 URL을 메신저, Slack, KakaoTalk, X 등에 붙여 넣으면 해당 사진이 안정적인 미리보기 이미지로 사용된다. `v` 쿼리는 Facebook 같은 플랫폼의 오래된 실패 응답 캐시를 우회하기 위한 미리보기 이미지 버전이다. 공유 타이틀은 개별 파일명이 아니라 사이트 기본 타이틀인 `ichewigeskind — Film Photography Journal`로 고정한다.
 
 ---
 
@@ -325,7 +325,7 @@ curl -H "Authorization: Bearer $DRIVE_USAGE_ACCESS_KEY" \
 - `/api/gallery`가 이미지 목록을 반환하는지 확인한다.
 - `/api/gallery/image?id={fileId}`가 `content-type: image/jpeg` 또는 실제 이미지 타입으로 응답하는지 확인한다.
 - `/photos/{fileId}`가 새로고침/직접 접근에서 200으로 열리는지 확인한다.
-- 공유 미리보기 디버거에서 `og:image`가 `/photos/{fileId}/opengraph-image`인지 확인한다.
+- 공유 미리보기 디버거에서 `og:image`가 `/photos/{fileId}/opengraph-image?v=2`인지 확인한다.
 
 공유 미리보기는 플랫폼별 캐시가 강하다. 이미지나 메타데이터를 수정한 뒤에도 Slack, KakaoTalk, Facebook 등에서 이전 미리보기가 보일 수 있다. 이 경우 각 플랫폼의 URL debugger 또는 캐시 갱신 도구를 사용한다.
 

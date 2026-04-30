@@ -9,6 +9,8 @@ import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
+const OPEN_GRAPH_IMAGE_VERSION = "2";
+
 type PhotoPageProps = {
   params: Promise<{ id: string }>;
 };
@@ -39,6 +41,7 @@ export async function generateMetadata({ params }: PhotoPageProps): Promise<Meta
   const siteUrl = getSiteUrl();
   const pageUrl = new URL(getPhotoPath(id), siteUrl);
   const imageUrl = new URL(`${getPhotoPath(id)}/opengraph-image`, siteUrl);
+  imageUrl.searchParams.set("v", OPEN_GRAPH_IMAGE_VERSION);
   const title = "ichewigeskind — Film Photography Journal";
   const description =
     "A quiet journal dedicated to the art of analog photography. Stories told through grain, light, and patience.";
