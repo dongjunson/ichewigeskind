@@ -2,7 +2,14 @@ import { google } from "googleapis";
 import { unstable_cache } from "next/cache";
 import { recordDriveUsage } from "./drive-monitor";
 
-const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+];
 const DRIVE_PAGE_SIZE = 30;
 const GALLERY_REVALIDATE_SECONDS = 60;
 

@@ -88,7 +88,7 @@ function JourneyFrame({
 }
 
 export function PhotoJourney({ items: source = [] }: { items?: GalleryImage[] }) {
-  const items = useMemo(() => source.slice(0, JOURNEY_COUNT).reverse(), [source]);
+  const items = useMemo(() => source.slice(0, JOURNEY_COUNT), [source]);
   const total = items.length;
   const [activeIndex, setActiveIndex] = useState(0);
   const sectionRef = useRef<HTMLElement | null>(null);

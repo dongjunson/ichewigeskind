@@ -2,7 +2,14 @@ import { google } from "googleapis";
 import { type NextRequest, NextResponse } from "next/server";
 import { recordDriveUsage } from "@/lib/drive-monitor";
 
-const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+];
 const DRIVE_PAGE_SIZE = 30;
 const GALLERY_REVALIDATE_SECONDS = 60;
 
