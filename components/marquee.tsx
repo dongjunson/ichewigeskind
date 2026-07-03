@@ -2,10 +2,8 @@ const MARQUEE_ITEMS = [
   "ich ewiges kind",
   "너와 함께하는 아름다운 일상들",
   "analog film journal",
-  "grain · light · patience",
   "ich ewiges kind",
   "a journal of analog photography",
-  "grain · light · patience",
 ];
 
 const MARQUEE_COPIES = [0, 1];
