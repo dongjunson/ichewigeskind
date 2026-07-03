@@ -491,6 +491,20 @@ export function Gallery({
     return () => window.removeEventListener("popstate", syncViewerWithLocation);
   }, [items]);
 
+  useEffect(() => {
+    const handleOpenRequest = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string }>).detail?.id;
+      if (!id) return;
+      const index = items.findIndex((item) => item.id === id);
+      if (index === -1) return;
+      setViewerIndex(index);
+      window.history.pushState({ photoId: id }, "", getPhotoPath(id));
+    };
+
+    window.addEventListener("gallery:open", handleOpenRequest);
+    return () => window.removeEventListener("gallery:open", handleOpenRequest);
+  }, [items]);
+
   const loadMore = async () => {
     if (!nextPageToken || loadingMore) return;
 
@@ -549,6 +563,20 @@ export function Gallery({
 
   return (
     <section id="work" className="w-full pb-16 sm:pb-24">
+      <div className="flex items-end justify-between px-6 pb-8 pt-16 md:px-16 md:pb-10 md:pt-24 lg:px-24">
+        <div>
+          <p className="font-sans text-[11px] uppercase tracking-[0.28em] text-muted-foreground">
+            Archive
+          </p>
+          <h2 className="mt-2 font-serif text-3xl text-primary md:text-4xl">All frames</h2>
+        </div>
+        {!loading && !error && (
+          <p className="font-date text-xs text-muted-foreground">
+            {items.length}
+            {nextPageToken ? "+" : ""} frames
+          </p>
+        )}
+      </div>
       {loading && (
         <div className={`grid ${GRID_COLS} gap-0`}>
           {LOADING_PLACEHOLDERS.map((placeholder) => (
@@ -582,7 +610,9 @@ export function Gallery({
                 }
                 isHovered={hoveredIndex === index}
                 onClick={() => openViewer(index)}
-                onHoverEnd={() => setHoveredIndex((current) => (current === index ? null : current))}
+                onHoverEnd={() =>
+                  setHoveredIndex((current) => (current === index ? null : current))
+                }
                 onHoverStart={() => setHoveredIndex(index)}
                 priority={index < 6}
               />

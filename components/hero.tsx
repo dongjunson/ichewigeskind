@@ -2,16 +2,9 @@
 
 import gsap from "gsap";
 import Image from "next/image";
-import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 
-export function Hero({
-  initialSrc,
-  children,
-}: {
-  initialSrc?: string | null;
-  children?: ReactNode;
-}) {
+export function Hero({ initialSrc }: { initialSrc?: string | null }) {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
@@ -77,8 +70,7 @@ export function Hero({
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
       </div>
 
-      <div className="relative z-10 grid min-h-[100svh] w-full grid-rows-[minmax(0,1fr)_auto] gap-6 px-6 pb-14 pt-24 md:gap-8 md:px-16 md:pb-20 md:pt-28 lg:px-24">
-        {children}
+      <div className="relative z-10 flex min-h-[100svh] w-full items-end px-6 pb-16 pt-24 md:px-16 md:pb-24 md:pt-28 lg:px-24">
         <div className="max-w-3xl">
           <p
             ref={subtitleRef}
@@ -93,6 +85,13 @@ export function Hero({
             ich ewiges kind.
           </h1>
         </div>
+      </div>
+
+      <div className="pointer-events-none absolute bottom-6 left-1/2 z-20 hidden -translate-x-1/2 flex-col items-center gap-2 md:flex">
+        <span className="font-sans text-[10px] uppercase tracking-[0.3em] text-primary/60">
+          Scroll
+        </span>
+        <span className="scroll-cue-line" />
       </div>
     </section>
   );

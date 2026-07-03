@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import { notFound } from "next/navigation";
 import { Footer } from "@/components/footer";
 import { Gallery } from "@/components/gallery";
 import { Hero } from "@/components/hero";
-import { LatestShowcase } from "@/components/latest-showcase";
+import { Marquee } from "@/components/marquee";
+import { PhotoJourney } from "@/components/photo-journey";
 import { getGalleryImageById, getInitialGalleryPage } from "@/lib/gallery";
-import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -97,9 +98,9 @@ export default async function PhotoPage({ params }: PhotoPageProps) {
 
   return (
     <main>
-      <Hero initialSrc={heroSrc}>
-        <LatestShowcase items={images.slice(0, 5)} />
-      </Hero>
+      <Hero initialSrc={heroSrc} />
+      <PhotoJourney items={images} />
+      <Marquee />
       <Gallery
         initialItems={images}
         initialNextPageToken={nextPageToken}
