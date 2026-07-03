@@ -167,8 +167,8 @@ function GalleryCard({
 
   const imageTransitionClass = hoverEnabled
     ? isHovered
-      ? "duration-[650ms] ease-[cubic-bezier(0.16,1,0.3,1)] transition-[opacity,transform,filter] group-hover:scale-105"
-      : "duration-[4000ms] ease-[cubic-bezier(0.22,1,0.36,1)] transition-[opacity,filter]"
+      ? "duration-[350ms] ease-[cubic-bezier(0.16,1,0.3,1)] transition-[opacity,transform,filter] group-hover:scale-105"
+      : "duration-[600ms] ease-[cubic-bezier(0.22,1,0.36,1)] transition-[opacity,filter]"
     : "duration-500 ease-out transition-opacity";
   const imageFilterClass = isDimmed ? "grayscale brightness-[0.72]" : "grayscale-0 brightness-100";
 
@@ -179,8 +179,12 @@ function GalleryCard({
       onClick={onClick}
       onBlur={onHoverEnd}
       onFocus={onHoverStart}
-      onPointerEnter={onHoverStart}
-      onPointerLeave={onHoverEnd}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") onHoverStart();
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType === "mouse") onHoverEnd();
+      }}
       className={`gallery-card w-full text-left ${hoverEnabled ? "group is-hover-enabled" : ""}`}
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
@@ -441,6 +445,21 @@ export function Gallery({
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [supportsHover, setSupportsHover] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updateSupportsHover = () => setSupportsHover(mediaQuery.matches);
+
+    updateSupportsHover();
+    mediaQuery.addEventListener("change", updateSupportsHover);
+    return () => mediaQuery.removeEventListener("change", updateSupportsHover);
+  }, []);
+
+  useEffect(() => {
+    if (supportsHover) return;
+    setHoveredIndex(null);
+  }, [supportsHover]);
 
   useEffect(() => {
     if (initialItems.length > 0) return;
@@ -613,7 +632,9 @@ export function Gallery({
                 onHoverEnd={() =>
                   setHoveredIndex((current) => (current === index ? null : current))
                 }
-                onHoverStart={() => setHoveredIndex(index)}
+                onHoverStart={() => {
+                  if (supportsHover) setHoveredIndex(index);
+                }}
                 priority={index < 6}
               />
             ))}
