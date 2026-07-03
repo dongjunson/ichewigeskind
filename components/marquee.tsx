@@ -6,6 +6,10 @@ const MARQUEE_ITEMS = [
   "a journal of analog photography",
 ];
 
+// One group must be wider than any viewport: the track holds two identical
+// groups and loops at translateX(-50%), so a narrow group leaves a gap on the right.
+const GROUP_ITEMS = Array.from({ length: 4 }, () => MARQUEE_ITEMS).flat();
+
 const MARQUEE_COPIES = [0, 1];
 
 export function Marquee() {
@@ -14,7 +18,7 @@ export function Marquee() {
       <div className="marquee__track">
         {MARQUEE_COPIES.map((copy) => (
           <div key={copy} className="marquee__group">
-            {MARQUEE_ITEMS.map((text, index) => (
+            {GROUP_ITEMS.map((text, index) => (
               <span
                 key={`${copy}-${text}-${
                   // biome-ignore lint/suspicious/noArrayIndexKey: static decorative list with repeated entries
