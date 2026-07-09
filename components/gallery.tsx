@@ -556,7 +556,7 @@ export function Gallery({
   const closeViewer = () => {
     setViewerIndex(null);
     if (window.location.pathname.startsWith("/photos/")) {
-      window.history.replaceState(null, "", "/#work");
+      window.history.replaceState(null, "", "/#frames");
     }
   };
   const goPrev = () =>
@@ -581,7 +581,7 @@ export function Gallery({
     });
 
   return (
-    <section id="work" className="w-full pb-16 sm:pb-24">
+    <section id="frames" className="w-full pb-16 sm:pb-24">
       <div className="flex items-end justify-between px-6 pb-8 pt-16 md:px-16 md:pb-10 md:pt-24 lg:px-24">
         <div>
           <p className="font-sans text-[11px] uppercase tracking-[0.28em] text-muted-foreground">

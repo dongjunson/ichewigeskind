@@ -78,6 +78,7 @@ export default function RootLayout({
             gtag('config', '${GA_MEASUREMENT_ID}');
           `}
         </Script>
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1801416787951960" crossorigin="anonymous"></script>
       </head>
       <body className="font-sans antialiased">{children}</body>
     </html>

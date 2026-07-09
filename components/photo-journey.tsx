@@ -153,6 +153,7 @@ export function PhotoJourney({ items: source = [] }: { items?: GalleryImage[] })
   return (
     <section
       ref={sectionRef}
+      id="timeline"
       aria-label="Photo timeline"
       className="film-grain relative flex h-[100svh] flex-col overflow-hidden bg-background"
     >

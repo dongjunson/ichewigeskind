@@ -6,6 +6,7 @@ import { Gallery } from "@/components/gallery";
 import { Hero } from "@/components/hero";
 import { Marquee } from "@/components/marquee";
 import { PhotoJourney } from "@/components/photo-journey";
+import { SectionHashSync } from "@/components/section-hash";
 import { getGalleryImageById, getInitialGalleryPage } from "@/lib/gallery";
 
 export const dynamic = "force-dynamic";
@@ -106,6 +107,7 @@ export default async function PhotoPage({ params }: PhotoPageProps) {
         initialNextPageToken={nextPageToken}
         initialSelectedImage={initialSelectedImage}
       />
+      <SectionHashSync ids={["timeline", "frames"]} />
       <Footer />
     </main>
   );
